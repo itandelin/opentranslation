@@ -1,0 +1,75 @@
+<?php
+namespace OpenTranslation;
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
+
+class Activator {
+    public static function activate() {
+        self::create_tables();
+        self::schedule_cron();
+        update_option( 'opentranslation_db_version', OPENTRANSLATION_DB_VERSION );
+    }
+
+    private static function create_tables() {
+        global $wpdb;
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        $charset_collate = $wpdb->get_charset_collate();
+        $prefix = $wpdb->prefix;
+
+        $sql_cache = "CREATE TABLE IF NOT EXISTS {$prefix}opentranslation_cache (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            cache_key varchar(32) NOT NULL,
+            source_text longtext NOT NULL,
+            target_lang varchar(10) NOT NULL,
+            context varchar(100) DEFAULT NULL,
+            translated_text longtext,
+            model varchar(50) DEFAULT NULL,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            status varchar(20) DEFAULT 'pending',
+            retry_count tinyint(3) unsigned DEFAULT 0,
+            next_retry_at datetime DEFAULT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY cache_key (cache_key),
+            KEY target_lang (target_lang),
+            KEY status (status),
+            KEY next_retry_at (next_retry_at)
+        ) {$charset_collate};";
+
+        $sql_log = "CREATE TABLE IF NOT EXISTS {$prefix}opentranslation_log (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            cache_key varchar(32) NOT NULL,
+            action varchar(50) NOT NULL,
+            message longtext,
+            created_at datetime DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY cache_key (cache_key),
+            KEY action (action),
+            KEY created_at (created_at)
+        ) {$charset_collate};";
+
+        $sql_rate_limit = "CREATE TABLE IF NOT EXISTS {$prefix}opentranslation_rate_limit (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            window_start datetime NOT NULL,
+            request_count int(10) unsigned DEFAULT 1,
+            PRIMARY KEY (id),
+            KEY window_start (window_start)
+        ) {$charset_collate};";
+
+        dbDelta( $sql_cache );
+        dbDelta( $sql_log );
+        dbDelta( $sql_rate_limit );
+    }
+
+    private static function schedule_cron() {
+        if ( class_exists( '\OpenTranslation\Scheduler' ) ) {
+            Scheduler::schedule_next();
+        }
+
+        if ( ! wp_next_scheduled( Scheduler::CRON_HOOK ) ) {
+            wp_schedule_single_event( time() + MINUTE_IN_SECONDS, Scheduler::CRON_HOOK );
+        }
+    }
+}
