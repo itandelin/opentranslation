@@ -38,9 +38,16 @@ class Cache {
             'model'           => $model,
             'status'          => $status,
         );
-        $existing = self::get( $cache_key );
-        if ( $existing ) {
-            $result = $wpdb->update( $table, $data, array( 'id' => $existing['id'] ), array( '%s', '%s', '%s', '%s', '%s', '%s', '%s' ), array( '%d' ) );
+        // 用 cache_key（唯一索引）定位，而非依赖缓存里是否带 id。
+        // 旧写法从 self::get() 取 id，但 update 分支写回缓存的 $data 不含 id，
+        // 在持久化对象缓存下会导致下次 update 走 WHERE id IS NULL：
+        // 匹配 0 行返回 0，却被 false !== $result 判成成功——译文没入库却报成功。
+        $existing_id = $wpdb->get_var(
+            $wpdb->prepare( "SELECT id FROM {$table} WHERE cache_key = %s LIMIT 1", $cache_key )
+        );
+
+        if ( $existing_id ) {
+            $result = $wpdb->update( $table, $data, array( 'id' => (int) $existing_id ), array( '%s', '%s', '%s', '%s', '%s', '%s', '%s' ), array( '%d' ) );
             if ( false === $result ) {
                 Log::add( $cache_key, 'cache_update_failed', $wpdb->last_error );
             }
@@ -48,13 +55,13 @@ class Cache {
             $result = $wpdb->insert( $table, $data, array( '%s', '%s', '%s', '%s', '%s', '%s', '%s' ) );
             if ( false === $result ) {
                 Log::add( $cache_key, 'cache_insert_failed', $wpdb->last_error );
-            } else {
-                $data['id'] = $wpdb->insert_id;
             }
         }
-        if ( false !== $result ) {
-            wp_cache_set( $cache_key, $data, self::CACHE_GROUP, HOUR_IN_SECONDS );
-        }
+
+        // 写后失效而非写后缓存：$data 缺 id / retry_count / next_retry_at，
+        // 缓存不完整会让重试计数永远读到 0（永不标 failed）、指数退避完全失效。
+        wp_cache_delete( $cache_key, self::CACHE_GROUP );
+
         return false !== $result;
     }
 
