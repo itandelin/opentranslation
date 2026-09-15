@@ -15,7 +15,11 @@ class OpenAI_Client implements Model_Client {
     private $last_request_units = 0;
     public function __construct( $config ) {
         $this->api_key = $config['api_key'];
-        $this->base_url = trailingslashit( $config['base_url'] );
+        $base_url      = isset( $config['base_url'] ) ? trim( (string) $config['base_url'] ) : '';
+        if ( '' === $base_url ) {
+            $base_url = Translator::default_base_url( 'openai' );
+        }
+        $this->base_url = trailingslashit( $base_url );
         $this->model = $config['model'];
         $this->temperature = isset( $config['temperature'] ) ? (float) $config['temperature'] : 0.3;
         $this->max_tokens = isset( $config['max_tokens'] ) ? (int) $config['max_tokens'] : 0;

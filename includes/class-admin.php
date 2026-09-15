@@ -156,7 +156,7 @@ class Admin {
         }
 
         if ( empty( $base_url ) ) {
-            $base_url = 'openai' === $provider ? 'https://api.openai.com/v1/' : 'https://api.anthropic.com/v1/';
+            $base_url = Translator::default_base_url( $provider );
         }
 
         $base_url = trailingslashit( $base_url );
@@ -254,7 +254,7 @@ class Admin {
         }
 
         if ( empty( $base_url ) ) {
-            $base_url = 'openai' === $provider ? 'https://api.openai.com/v1/' : 'https://api.anthropic.com/v1/';
+            $base_url = Translator::default_base_url( $provider );
         }
 
         $base_url = trailingslashit( $base_url );

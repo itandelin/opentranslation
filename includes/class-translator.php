@@ -329,4 +329,19 @@ class Translator {
 
         return null;
     }
+
+    /**
+     * 各 provider 的官方 Base URL。
+     *
+     * 供 Client 构造器与后台测试共用，避免两处默认值不一致——
+     * 这正是「测试通过但队列全失败」的根源。
+     *
+     * @param string $provider openai|claude
+     * @return string 带尾斜杠的 URL
+     */
+    public static function default_base_url( $provider ) {
+        return 'claude' === $provider
+            ? 'https://api.anthropic.com/v1/'
+            : 'https://api.openai.com/v1/';
+    }
 }

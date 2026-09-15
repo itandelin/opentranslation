@@ -15,10 +15,15 @@ class Claude_Client implements Model_Client {
 
     public function __construct( $config ) {
         $this->api_key = $config['api_key'];
-        $this->base_url = trailingslashit( $config['base_url'] );
+        $base_url      = isset( $config['base_url'] ) ? trim( (string) $config['base_url'] ) : '';
+        if ( '' === $base_url ) {
+            $base_url = Translator::default_base_url( 'claude' );
+        }
+        $this->base_url = trailingslashit( $base_url );
         $this->model = $config['model'];
         $this->temperature = isset( $config['temperature'] ) ? (float) $config['temperature'] : 0.3;
-        $this->max_tokens = isset( $config['max_tokens'] ) ? (int) $config['max_tokens'] : 4096;
+        // Claude Messages API 要求 max_tokens >= 1，界面填 0 表示「自动」需回落到默认值
+        $this->max_tokens = ! empty( $config['max_tokens'] ) ? (int) $config['max_tokens'] : 4096;
     }
 
     public function translate( $items, $target_lang, $system_prompt = '' ) {
