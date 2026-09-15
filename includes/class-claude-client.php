@@ -34,7 +34,28 @@ class Claude_Client implements Model_Client {
             return $response;
         }
 
-        $raw_body = wp_remote_retrieve_body( $response );
+        $raw_body    = wp_remote_retrieve_body( $response );
+        $status_code = (int) wp_remote_retrieve_response_code( $response );
+
+        // 非 2xx 必须先判定。否则 401/429/500 都会被误报为「空响应」，
+        // 掩盖真实原因（凭据无效、限流、上游故障）。
+        if ( $status_code < 200 || $status_code >= 300 ) {
+            $data     = json_decode( $raw_body, true );
+            $upstream = isset( $data['error']['message'] )
+                ? $data['error']['message']
+                : $this->limit_preview( $raw_body, 500 );
+
+            return new \WP_Error(
+                'claude_http_error',
+                sprintf(
+                    /* translators: %d is the HTTP status code. */
+                    __( 'Claude endpoint returned HTTP %d.', 'opentranslation' ),
+                    $status_code
+                ) . ' ' . $upstream,
+                array( 'status_code' => $status_code )
+            );
+        }
+
         $data = json_decode( $raw_body, true );
         if ( empty( $data['content'][0]['text'] ) ) {
             return new \WP_Error( 'claude_empty', __( 'Claude returned empty content.', 'opentranslation' ) );
