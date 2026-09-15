@@ -116,14 +116,23 @@ class Translator {
 
             foreach ( $chunk as $index => $item ) {
                 $raw = isset( $response[ $index ] ) ? $response[ $index ] : '';
-                $restored = $item['protector']->restore( $raw );
 
-                $validation = $item['protector']->validate( $restored );
+                // 必须先校验再还原。restore() 会把占位符换回真实内容，
+                // 之后校验必然把所有 token 报成缺失。
+                $validation = $item['protector']->validate( $raw );
                 if ( true !== $validation ) {
                     $this->mark_item_failed(
                         $item,
                         'Placeholder validation failed: ' . implode( ', ', $validation )
                     );
+                    continue;
+                }
+
+                $restored = $item['protector']->restore( $raw );
+
+                // 兜底：任何漏过 validate() 的占位符都不写入译文
+                if ( Protector::has_residual_placeholder( $restored ) ) {
+                    $this->mark_item_failed( $item, 'Residual placeholder after restore.' );
                     continue;
                 }
 

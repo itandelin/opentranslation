@@ -8,48 +8,36 @@ $protected = $p->protect( '<a href="/cart">Buy</a> now' );
 ot_assert_same( '<protect-1>Buy<protect-2> now', $protected, 'HTML 标签被替换为占位符' );
 ot_assert_same( '<a href="/cart">Buy</a> now', $p->restore( $protected ), '还原后与原文一致' );
 
-ot_test_group( 'Protector：每条目独立实例互不干扰（P0-1 回归）' );
+ot_test_group( 'Protector：一批多条各含不同 HTML，每条独立还原' );
 
-// 模拟 Translator 的真实用法：一批多条各含不同 HTML
+// 合约验收标准 1 第一条
 $items = array(
     '<a href="/cart">Buy</a> now',
     '<b>Hello</b>',
     'Price: <span class="p">100</span> USD',
 );
 
-// 正确做法：每条一个 Protector
-$protectors = array();
-$protected_texts = array();
+$protectors       = array();
+$protected_texts  = array();
 foreach ( $items as $i => $text ) {
-    $protectors[ $i ] = new Protector();
+    $protectors[ $i ]      = new Protector();
     $protected_texts[ $i ] = $protectors[ $i ]->protect( $text );
 }
 
-// 模拟模型原样返回占位符（理想情况）
 foreach ( $items as $i => $original ) {
     $restored = $protectors[ $i ]->restore( $protected_texts[ $i ] );
     ot_assert_same( $original, $restored, "第 {$i} 条独立还原正确" );
 }
 
-ot_test_group( 'Protector：validate 检出缺失占位符' );
-
-$p2 = new Protector();
-$prot = $p2->protect( '<b>Hi</b>' );
-ot_assert_same( true, $p2->validate( $prot ), '占位符齐全时返回 true' );
-
-$missing = $p2->validate( '你好' );
-ot_assert_true( is_array( $missing ), '占位符缺失时返回数组' );
-ot_assert_same( 2, count( $missing ), '缺失 2 个占位符' );
-
 ot_test_group( 'Protector：最后一条为纯文本不影响前面条目（线上真实失效路径）' );
 
-// 这组复现线上 1548 条污染的根因：
+// 复现线上 1548 条污染的根因之一：
 // 共享 Protector 时，最后一条纯文本会把 tokens 清空，
-// 导致 restore() 在 :42-44 短路，前面条目的占位符全部不被还原。
+// 导致 restore() 短路，前面条目的占位符全部不被还原。
 $batch = array(
-    'News&amp;Blog',                 // 含 HTML 实体，有 token
-    'Partner &#038; Distributor',    // 含 HTML 实体，有 token
-    'Simple plain text',             // 纯文本，无 token —— 关键
+    'News&amp;Blog',              // 含 HTML 实体，有 token
+    'Partner &#038; Distributor', // 含 HTML 实体，有 token
+    'Simple plain text',          // 纯文本，无 token —— 关键
 );
 
 $batch_protectors = array();
@@ -59,12 +47,76 @@ foreach ( $batch as $i => $text ) {
     $batch_protected[ $i ]  = $batch_protectors[ $i ]->protect( $text );
 }
 
+ot_assert_same( 'News<protect-1>Blog', $batch_protected[0], '第 1 条实体被保护' );
+ot_assert_same( 'Simple plain text', $batch_protected[2], '第 3 条纯文本无占位符' );
+
 ot_assert_same( '新闻&amp;博客', $batch_protectors[0]->restore( '新闻<protect-1>博客' ), '第 1 条实体正确还原' );
 ot_assert_same( '合作伙伴 &#038; 经销商', $batch_protectors[1]->restore( '合作伙伴 <protect-1> 经销商' ), '第 2 条实体正确还原' );
 ot_assert_same( '简单纯文本', $batch_protectors[2]->restore( '简单纯文本' ), '第 3 条纯文本原样返回' );
 
-ot_test_group( 'Protector：TP 自身占位符（P0-3 回归，此时应失败）' );
+ot_test_group( 'Protector：validate 校验模型原始响应（restore 之前）' );
 
-$p3 = new Protector();
+$pv = new Protector();
+$pv->protect( '<b>Hi</b>' );
+
+ot_assert_same( true, $pv->validate( '<protect-1>你好<protect-2>' ), '占位符齐全时通过' );
+
+$all_missing = $pv->validate( '你好' );
+ot_assert_true( is_array( $all_missing ), '占位符全部被吞时判失败' );
+ot_assert_same( 2, count( $all_missing ), '报告 2 个问题占位符' );
+
+$one_missing = $pv->validate( '<protect-1>你好' );
+ot_assert_true( is_array( $one_missing ), '漏一个占位符时判失败' );
+ot_assert_same( array( '<protect-2>' ), $one_missing, '只报告缺失的那一个' );
+
+ot_test_group( 'Protector：串号占位符被检出（线上 WFS 样本）' );
+
+// 原文无可保护内容，token 映射为空，
+// 但模型把别条目的占位符串了过来。
+$p4 = new Protector();
+$p4->protect( 'Water flow sensor WFS-B11A-GD-FM spare parts for boilers' );
+ot_assert_same( array(), $p4->get_tokens(), '原文无可保护内容时 token 映射为空' );
+
+$leaked = $p4->validate( '<protect-1> 水流传感器 WFS-B11A-GD-FM 锅炉备件' );
+ot_assert_true( is_array( $leaked ), '串号占位符被检出为失败' );
+ot_assert_same( array( '<protect-1>' ), $leaked, '报告的正是串进来的那个' );
+
+$p5 = new Protector();
+$p5->protect( '<b>Hi</b>' );
+$extra = $p5->validate( '<protect-1>你好<protect-2><protect-9>' );
+ot_assert_true( is_array( $extra ), '多出无主占位符被检出为失败' );
+ot_assert_same( array( '<protect-9>' ), $extra, '只报告多出的那一个' );
+
+ot_test_group( 'Protector：restore 后残留占位符兜底检查' );
+
+ot_assert_same( false, Protector::has_residual_placeholder( '这是干净的译文' ), '干净译文无残留' );
+ot_assert_same( false, Protector::has_residual_placeholder( '' ), '空串无残留' );
+ot_assert_same( true, Protector::has_residual_placeholder( '<protect-1> 残留了' ), '残留占位符被检出' );
+ot_assert_same( true, Protector::has_residual_placeholder( '尾部残留 <protect-42>' ), '任意编号的残留都被检出' );
+
+ot_test_group( 'Protector：完整流水线顺序（validate → restore → 残留检查）' );
+
+$pipe = new Protector();
+$src  = 'Buy <b>now</b> &amp; save';
+$prot = $pipe->protect( $src );
+
+ot_assert_same( 'Buy <protect-1>now<protect-2> <protect-3> save', $prot, '三处内容被保护' );
+
+// 模型理想返回
+$model_ok = '立即<protect-1>购买<protect-2> <protect-3> 省钱';
+ot_assert_same( true, $pipe->validate( $model_ok ), '理想响应通过校验' );
+
+$final = $pipe->restore( $model_ok );
+ot_assert_same( '立即<b>购买</b> &amp; 省钱', $final, '还原出正确 HTML 与实体' );
+ot_assert_same( false, Protector::has_residual_placeholder( $final ), '还原后无残留' );
+
+// 模型吞掉一个占位符 —— 应判失败，而非拼接到末尾
+$model_bad = '立即<protect-1>购买<protect-2> 省钱';
+ot_assert_true( is_array( $pipe->validate( $model_bad ) ), '吞占位符的响应判失败' );
+
+ot_test_group( 'Protector：TP 自身占位符（Task 3 目标）' );
+
+$p3    = new Protector();
 $prot3 = $p3->protect( 'Total 1TP1T off' );
 ot_assert_same( 'Total <protect-1> off', $prot3, 'TP 的 1TPnT 占位符被保护' );
+ot_assert_same( 'Total 1TP1T off', $p3->restore( $prot3 ), 'TP 占位符正确还原' );

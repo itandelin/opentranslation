@@ -49,25 +49,54 @@ class Protector {
         return $restored;
     }
 
+    /**
+     * 校验模型返回的原始文本。
+     *
+     * 必须在 restore() 之前调用。restore() 会把占位符换回真实内容，
+     * 之后再校验必然把所有 token 都报成缺失——这正是线上
+     * restore_missing() 被触发 2746 次、造成 276 条尾部裸标签的原因。
+     *
+     * 两类问题都判失败：
+     * 1. 本条目的占位符没有全部出现（模型吞掉了）
+     * 2. 出现了不属于本条目的占位符（模型把别条目的串了过来）
+     *
+     * @param string $text 模型返回的原始文本，尚未 restore
+     * @return true|array 通过返回 true，否则返回问题占位符列表
+     */
     public function validate( $text ) {
-        $missing = array();
+        $problems = array();
+
         foreach ( array_keys( $this->tokens ) as $token ) {
             if ( strpos( $text, $token ) === false ) {
-                $missing[] = $token;
+                $problems[] = $token;
             }
         }
-        return empty( $missing ) ? true : $missing;
+
+        if ( preg_match_all( '/<protect-\d+>/', $text, $matches ) ) {
+            foreach ( $matches[0] as $found ) {
+                if ( ! isset( $this->tokens[ $found ] ) && ! in_array( $found, $problems, true ) ) {
+                    $problems[] = $found;
+                }
+            }
+        }
+
+        return empty( $problems ) ? true : $problems;
     }
 
-    public function restore_missing( $text, $missing ) {
-        $restored = $text;
-        foreach ( $missing as $token ) {
-            if ( isset( $this->tokens[ $token ] ) ) {
-                // Insert the original value at the end if token is missing.
-                $restored .= ' ' . $this->tokens[ $token ];
-            }
-        }
-        return $restored;
+    /**
+     * restore() 之后是否仍残留占位符。
+     *
+     * validate() 已拦下已知的缺失与串号情况，这里是兜底：
+     * 任何漏过前一道的占位符都不应写入译文。
+     *
+     * 已知理论误报：原文本身字面包含 <protect-N> 时会误判失败。
+     * 该条目会被跳过而非写入破损内容，符合「宁可不翻译」的设计取向。
+     *
+     * @param string $text 已 restore 的文本
+     * @return bool
+     */
+    public static function has_residual_placeholder( $text ) {
+        return 1 === preg_match( '/<protect-\d+>/', (string) $text );
     }
 
     public function get_tokens() {
