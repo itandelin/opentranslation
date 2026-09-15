@@ -5,9 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 class Translator {
-    private $protector;
     public function __construct() {
-        $this->protector = new Protector();
     }
     public function translate_batch( $items, $language ) {
         $settings = get_option( 'opentranslation_settings', array() );
@@ -63,13 +61,14 @@ class Translator {
                 Cache::set( $cache_key, $item['original'], $language, '', $context, '', 'pending' );
             }
 
-            $protected = $this->protector->protect( $item['original'] );
+            $protector = new Protector();
             $to_translate[] = array(
                 'id'        => $item['id'],
                 'original'  => $item['original'],
-                'protected' => $protected,
+                'protected' => $protector->protect( $item['original'] ),
                 'context'   => $context,
                 'cache_key' => $cache_key,
+                'protector' => $protector,
             );
         }
 
@@ -117,12 +116,15 @@ class Translator {
 
             foreach ( $chunk as $index => $item ) {
                 $raw = isset( $response[ $index ] ) ? $response[ $index ] : '';
-                $restored = $this->protector->restore( $raw );
+                $restored = $item['protector']->restore( $raw );
 
-                $validation = $this->protector->validate( $restored );
+                $validation = $item['protector']->validate( $restored );
                 if ( true !== $validation ) {
-                    $restored = $this->protector->restore_missing( $restored, $validation );
-                    Log::add( $item['cache_key'], 'placeholder_restored', 'Restored missing placeholders: ' . implode( ', ', $validation ) );
+                    $this->mark_item_failed(
+                        $item,
+                        'Placeholder validation failed: ' . implode( ', ', $validation )
+                    );
+                    continue;
                 }
 
                 $cache_result = Cache::set( $item['cache_key'], $item['original'], $language, $restored, $item['context'], $used_model, 'translated' );

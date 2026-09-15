@@ -15,13 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 class TP_Machine_Translator extends \TRP_Machine_Translator {
     
     private $translator;
-    private $protector;
-    
+
     public function __construct( $settings ) {
         parent::__construct( $settings );
-        
+
         $this->translator = new Translator();
-        $this->protector = new Protector();
     }
     
     /**
@@ -96,14 +94,12 @@ class TP_Machine_Translator extends \TRP_Machine_Translator {
         
         // Convert strings to format expected by our translator
         $items = array();
-        $index = 0;
         foreach ( $new_strings as $key => $string ) {
             $items[] = array(
                 'id'       => $key, // Preserve original key for response mapping
                 'original' => $string,
                 'context'  => '',
             );
-            $index++;
         }
         
         // Use our existing translator to handle the translation
