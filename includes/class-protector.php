@@ -20,6 +20,10 @@ class Protector {
             '/&[\w#]+;/',
             '/https?:\/\/[^\s]+/i',
             '/[\w.-]+@[\w.-]+\.\w+/',
+            // TranslatePress 自身的占位符（TRP_Machine_Translator::translate() 生成）
+            // 形如 1TP1T、1TP2T。必须放在 HTML 模式之后，
+            // 否则本模式产出的 <protect-N> 会被 HTML 模式二次吞掉。
+            '/\d+TP\d+T/',
         );
     }
 
@@ -54,7 +58,7 @@ class Protector {
      *
      * 必须在 restore() 之前调用。restore() 会把占位符换回真实内容，
      * 之后再校验必然把所有 token 都报成缺失——这正是线上
-     * restore_missing() 被触发 2746 次、造成 276 条尾部裸标签的原因。
+     * 旧版的「末尾拼接兜底」被触发 2746 次、造成 276 条尾部裸标签的原因。
      *
      * 两类问题都判失败：
      * 1. 本条目的占位符没有全部出现（模型吞掉了）
