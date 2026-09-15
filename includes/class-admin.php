@@ -51,13 +51,29 @@ class Admin {
     }
 
     public function sanitize_settings( $input ) {
+        $existing = get_option( 'opentranslation_settings', array() );
+
         $output = array();
         $output['batch_size'] = isset( $input['batch_size'] ) ? absint( $input['batch_size'] ) : 10;
         $output['cron_interval'] = isset( $input['cron_interval'] ) ? absint( $input['cron_interval'] ) : 5;
         $output['rate_limit_per_minute'] = isset( $input['rate_limit_per_minute'] ) ? absint( $input['rate_limit_per_minute'] ) : 20;
         $output['system_prompt'] = isset( $input['system_prompt'] ) ? sanitize_textarea_field( $input['system_prompt'] ) : self::default_system_prompt();
-        $output['disabled_languages'] = isset( $input['disabled_languages'] ) && is_array( $input['disabled_languages'] ) ? array_map( 'sanitize_text_field', $input['disabled_languages'] ) : array();
-        $output['plugin_language'] = isset( $input['plugin_language'] ) ? sanitize_text_field( $input['plugin_language'] ) : 'zh_CN';
+
+        // 暂停语言由 Queue 页维护，Settings 表单不含该字段。
+        // 若不保留原值，保存一次设置就会让所有已暂停语言恢复翻译，直接影响 API 账单。
+        if ( isset( $input['disabled_languages'] ) && is_array( $input['disabled_languages'] ) ) {
+            $output['disabled_languages'] = array_map( 'sanitize_text_field', $input['disabled_languages'] );
+        } elseif ( isset( $existing['disabled_languages'] ) && is_array( $existing['disabled_languages'] ) ) {
+            $output['disabled_languages'] = array_map( 'sanitize_text_field', $existing['disabled_languages'] );
+        } else {
+            $output['disabled_languages'] = array();
+        }
+
+        // 白名单校验：languages/ 下只有 zh_CN 一份语言包，en_US 为源语言
+        $allowed_languages = array( 'zh_CN', 'en_US' );
+        $plugin_language = isset( $input['plugin_language'] ) ? sanitize_text_field( $input['plugin_language'] ) : 'zh_CN';
+        $output['plugin_language'] = in_array( $plugin_language, $allowed_languages, true ) ? $plugin_language : 'zh_CN';
+
         return $output;
     }
 
