@@ -105,6 +105,10 @@ class Admin {
         if ( ! isset( $_POST['opentranslation_models_nonce'] ) ) {
             return;
         }
+        // nonce 只防 CSRF，不防越权：能力检查必须独立存在
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
         if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['opentranslation_models_nonce'] ) ), 'opentranslation_models_action' ) ) {
             return;
         }
