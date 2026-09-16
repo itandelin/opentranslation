@@ -166,12 +166,24 @@ class OpenAI_Client implements Model_Client {
         return implode( "\n", $parts );
     }
     private function build_http_error( $status_code, $raw_body ) {
-        $message = sprintf( __( 'OpenAI-compatible endpoint returned HTTP %d.', 'opentranslation' ), (int) $status_code );
-        $preview = $this->limit_preview( $raw_body, 500 );
-        if ( '' === $preview ) {
-            $preview = '(empty body)';
+        $message = sprintf(
+            /* translators: %d is the HTTP status code. */
+            __( 'OpenAI-compatible endpoint returned HTTP %d.', 'opentranslation' ),
+            (int) $status_code
+        );
+
+        $data     = json_decode( $raw_body, true );
+        $upstream = isset( $data['error']['message'] ) ? $data['error']['message'] : '';
+
+        if ( '' !== $upstream ) {
+            // 上游结构化错误消息通常不含凭据，保留有助排查
+            $message .= ' ' . $upstream;
+        } elseif ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            $preview  = $this->limit_preview( $raw_body, 500 );
+            $message .= ' Debug: ' . ( '' === $preview ? '(empty body)' : $preview );
         }
-        return new \WP_Error( 'openai_http_error', $message . ' Debug: ' . $preview, array( 'status_code' => (int) $status_code ) );
+
+        return new \WP_Error( 'openai_http_error', $message, array( 'status_code' => (int) $status_code ) );
     }
     private function parse_response( $content, $raw_body = '' ) {
         $content = trim( $content );
@@ -212,8 +224,11 @@ class OpenAI_Client implements Model_Client {
         if ( ! empty( $results ) ) {
             return $results;
         }
-        $debug = substr( $raw_body, 0, 500 );
-        return new \WP_Error( 'parse_error', __( 'Failed to parse model response as JSON array.', 'opentranslation' ) . ' Debug: ' . $debug );
+        $message = __( 'Failed to parse model response as JSON array.', 'opentranslation' );
+        if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+            $message .= ' Debug: ' . $this->limit_preview( $raw_body, 500 );
+        }
+        return new \WP_Error( 'parse_error', $message );
     }
     private function translate_resilient( $items, $target_lang, $system_prompt = '', $depth = 0 ) {
         $request = $this->request_with_retries( $items, $target_lang, $system_prompt );
@@ -230,8 +245,13 @@ class OpenAI_Client implements Model_Client {
         $data = json_decode( $raw_body, true );
         $content = $this->extract_message_content( $data );
         if ( '' === $content ) {
-            $debug = $this->limit_preview( $raw_body, 500 );
-            return $this->maybe_split_request( $items, $target_lang, $system_prompt, new \WP_Error( 'openai_empty', __( 'OpenAI-compatible endpoint returned empty content.', 'opentranslation' ) . ' Debug: ' . $debug ), $depth );
+            // 上游 body 常含请求头片段、账号 ID、key 前缀，
+            // 仅在 WP_DEBUG 下附加；Log::redact() 再对残留做打码
+            $message = __( 'OpenAI-compatible endpoint returned empty content.', 'opentranslation' );
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                $message .= ' Debug: ' . $this->limit_preview( $raw_body, 500 );
+            }
+            return $this->maybe_split_request( $items, $target_lang, $system_prompt, new \WP_Error( 'openai_empty', $message ), $depth );
         }
         $parsed = $this->parse_response( $content, $raw_body );
         if ( is_wp_error( $parsed ) ) {

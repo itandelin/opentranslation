@@ -67,6 +67,7 @@ class Scheduler {
                 return;
             }
             $this->cleanup_rate_limit();
+            Log::maybe_cleanup();
             $round_limit = $this->get_round_limit();
             for ( $round = 0; $round < $round_limit; $round++ ) {
                 $processed = false;

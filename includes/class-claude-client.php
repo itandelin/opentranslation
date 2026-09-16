@@ -41,17 +41,27 @@ class Claude_Client implements Model_Client {
         // 掩盖真实原因（凭据无效、限流、上游故障）。
         if ( $status_code < 200 || $status_code >= 300 ) {
             $data     = json_decode( $raw_body, true );
-            $upstream = isset( $data['error']['message'] )
-                ? $data['error']['message']
-                : $this->limit_preview( $raw_body, 500 );
+            $upstream = isset( $data['error']['message'] ) ? $data['error']['message'] : '';
+
+            // 上游 body 常含请求头片段、账号 ID、key 前缀，
+            // 无结构化错误消息时仅在 WP_DEBUG 下附加原始预览
+            if ( '' === $upstream && defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                $upstream = $this->limit_preview( $raw_body, 500 );
+            }
+
+            $message = sprintf(
+                /* translators: %d is the HTTP status code. */
+                __( 'Claude endpoint returned HTTP %d.', 'opentranslation' ),
+                $status_code
+            );
+
+            if ( '' !== $upstream ) {
+                $message .= ' ' . $upstream;
+            }
 
             return new \WP_Error(
                 'claude_http_error',
-                sprintf(
-                    /* translators: %d is the HTTP status code. */
-                    __( 'Claude endpoint returned HTTP %d.', 'opentranslation' ),
-                    $status_code
-                ) . ' ' . $upstream,
+                $message,
                 array( 'status_code' => $status_code )
             );
         }

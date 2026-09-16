@@ -10,6 +10,7 @@ require_once __DIR__ . '/assert.php';
 require_once __DIR__ . '/../includes/class-protector.php';
 require_once __DIR__ . '/../includes/class-translator.php';
 require_once __DIR__ . '/../includes/class-url-guard.php';
+require_once __DIR__ . '/../includes/class-log.php';
 
 foreach ( glob( __DIR__ . '/test-*.php' ) as $test_file ) {
     require_once $test_file;

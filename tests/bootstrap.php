@@ -81,3 +81,7 @@ if ( ! function_exists( 'wp_parse_url' ) ) {
         return parse_url( $url, $component );
     }
 }
+
+if ( ! defined( 'DAY_IN_SECONDS' ) ) {
+    define( 'DAY_IN_SECONDS', 86400 );
+}

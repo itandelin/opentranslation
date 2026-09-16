@@ -40,14 +40,28 @@ class TP_Storage_Adapter {
         } ) );
     }
 
+    /**
+     * 语言码白名单化：只保留字母数字与下划线。
+     *
+     * 语言码来自 TP 设置，正常可信，但会直接拼进表名进入 SQL，
+     * 必须防止 TP 设置被污染时形成注入落点。
+     */
+    private static function normalize_language_slug( $language ) {
+        $slug = strtolower( str_replace( '-', '_', (string) $language ) );
+        return preg_replace( '/[^a-z0-9_]/', '', $slug );
+    }
+
     public static function get_dictionary_table( $language ) {
         global $wpdb;
         $settings     = self::get_settings();
         $default_lang = isset( $settings['default-language'] ) ? $settings['default-language'] : 'en_US';
 
+        $default_slug = self::normalize_language_slug( $default_lang );
+        $target_slug  = self::normalize_language_slug( $language );
+
         $candidates = array(
-            $wpdb->prefix . 'trp_dictionary_' . strtolower( str_replace( '-', '_', $default_lang ) ) . '_' . strtolower( str_replace( '-', '_', $language ) ),
-            $wpdb->prefix . 'trp_dictionary_' . strtolower( str_replace( '-', '_', $language ) ),
+            $wpdb->prefix . 'trp_dictionary_' . $default_slug . '_' . $target_slug,
+            $wpdb->prefix . 'trp_dictionary_' . $target_slug,
         );
 
         foreach ( $candidates as $candidate ) {
@@ -105,8 +119,12 @@ class TP_Storage_Adapter {
     public static function get_untranslated_count( $language ) {
         global $wpdb;
         $table = self::get_dictionary_table( $language );
-        $sql = "SELECT COUNT(*) FROM `{$table}` WHERE ( translated = '' OR translated IS NULL ) AND status != 2";
-        return (int) $wpdb->get_var( $sql );
+        return (int) $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) FROM `{$table}` WHERE ( translated = '' OR translated IS NULL ) AND status != %d",
+                2
+            )
+        );
     }
 
     public static function update_translation( $language, $id, $translated_text ) {
