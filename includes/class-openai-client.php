@@ -97,7 +97,18 @@ class OpenAI_Client implements Model_Client {
         if ( $this->max_tokens > 0 ) {
             $body['max_tokens'] = $this->max_tokens;
         }
-        return array( 'url' => $url, 'response' => wp_remote_post( $url, array( 'method' => 'POST', 'headers' => array( 'Content-Type' => 'application/json', 'Accept' => 'application/json', 'Authorization' => 'Bearer ' . $this->api_key ), 'body' => wp_json_encode( $body ), 'timeout' => $this->timeout ) ) );
+        $request_args = URL_Guard::harden_request_args( array(
+            'method'  => 'POST',
+            'headers' => array(
+                'Content-Type'  => 'application/json',
+                'Accept'        => 'application/json',
+                'Authorization' => 'Bearer ' . $this->api_key,
+            ),
+            'body'    => wp_json_encode( $body ),
+            'timeout' => $this->timeout,
+        ) );
+
+        return array( 'url' => $url, 'response' => wp_remote_post( $url, $request_args ) );
     }
     private function request_with_retries( $items, $target_lang, $system_prompt = '' ) {
         $attempts = array();

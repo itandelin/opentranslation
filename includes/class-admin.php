@@ -88,6 +88,7 @@ class Admin {
 
     public function render_models_page() {
         $this->handle_models_actions();
+        settings_errors( 'opentranslation_models' );
         $models = Encrypted_Options::get( 'opentranslation_models', array() );
         require OPENTRANSLATION_PLUGIN_DIR . 'templates/admin-models.php';
     }
@@ -116,10 +117,22 @@ class Admin {
         $models = Encrypted_Options::get( 'opentranslation_models', array() );
 
         if ( isset( $_POST['add_model'] ) ) {
+            $base_url = esc_url_raw( wp_unslash( $_POST['base_url'] ?? '' ) );
+
+            // 留空表示使用官方地址（由 Client 构造器回落），无需校验
+            if ( '' !== $base_url ) {
+                $reason = URL_Guard::get_rejection_reason( $base_url );
+                if ( '' !== $reason ) {
+                    add_settings_error( 'opentranslation_models', 'invalid_base_url', $reason, 'error' );
+                    return;
+                }
+            }
+
             $models[] = array(
                 'provider'    => sanitize_text_field( wp_unslash( $_POST['provider'] ?? 'openai' ) ),
-                'api_key'     => sanitize_text_field( wp_unslash( $_POST['api_key'] ?? '' ) ),
-                'base_url'    => esc_url_raw( wp_unslash( $_POST['base_url'] ?? '' ) ),
+                // API Key 用 trim 而非 sanitize_text_field，理由同上（S8）
+                'api_key'     => isset( $_POST['api_key'] ) ? trim( wp_unslash( $_POST['api_key'] ) ) : '',
+                'base_url'    => $base_url,
                 'model'       => isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : 'gpt-4o',
                 'priority'    => isset( $_POST['priority'] ) ? absint( $_POST['priority'] ) : 10,
                 'temperature' => isset( $_POST['temperature'] ) ? (float) $_POST['temperature'] : 0.3,
@@ -168,7 +181,9 @@ class Admin {
         }
 
         $provider = isset( $_POST['provider'] ) ? sanitize_text_field( wp_unslash( $_POST['provider'] ) ) : 'openai';
-        $api_key  = isset( $_POST['api_key'] ) ? sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) : '';
+        // API Key 用 trim 而非 sanitize_text_field：后者会剥离特殊字符，
+        // 可能静默损坏部分网关的自定义格式密钥（S8）
+        $api_key  = isset( $_POST['api_key'] ) ? trim( wp_unslash( $_POST['api_key'] ) ) : '';
         $base_url = isset( $_POST['base_url'] ) ? esc_url_raw( wp_unslash( $_POST['base_url'] ) ) : '';
 
         if ( empty( $api_key ) ) {
@@ -177,6 +192,12 @@ class Admin {
 
         if ( empty( $base_url ) ) {
             $base_url = Translator::default_base_url( $provider );
+        }
+
+        // 保存时已校验，但 AJAX 可被单独调用，必须独立校验
+        $reason = URL_Guard::get_rejection_reason( $base_url );
+        if ( '' !== $reason ) {
+            wp_send_json_error( $reason );
         }
 
         $base_url = trailingslashit( $base_url );
@@ -201,10 +222,10 @@ class Admin {
         $response = null;
         $last_error = '';
         foreach ( $urls_to_try as $try_url ) {
-            $response = wp_remote_get( $try_url, array(
+            $response = wp_remote_get( $try_url, URL_Guard::harden_request_args( array(
                 'headers' => $headers,
                 'timeout' => 15,
-            ) );
+            ) ) );
 
             if ( is_wp_error( $response ) ) {
                 $last_error = $response->get_error_message();
@@ -277,6 +298,12 @@ class Admin {
             $base_url = Translator::default_base_url( $provider );
         }
 
+        // AJAX 可被单独调用，必须独立校验
+        $reason = URL_Guard::get_rejection_reason( $base_url );
+        if ( '' !== $reason ) {
+            wp_send_json_error( $reason );
+        }
+
         $base_url = trailingslashit( $base_url );
 
         $endpoint = 'claude' === $provider ? 'messages' : 'chat/completions';
@@ -303,11 +330,11 @@ class Admin {
         $response = null;
         $last_error = '';
         foreach ( $urls_to_try as $try_url ) {
-            $response = wp_remote_post( $try_url, array(
+            $response = wp_remote_post( $try_url, URL_Guard::harden_request_args( array(
                 'headers' => $headers,
                 'body'    => wp_json_encode( $body ),
                 'timeout' => 15,
-            ) );
+            ) ) );
 
             if ( is_wp_error( $response ) ) {
                 $last_error = $response->get_error_message();

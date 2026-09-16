@@ -27,6 +27,7 @@ $ot_files = array(
     'class-deactivator',
     'class-uninstaller',
     'class-encrypted-options',
+    'class-url-guard',
     'interface-model-client',
     'class-openai-client',
     'class-claude-client',

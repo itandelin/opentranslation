@@ -156,18 +156,20 @@ class Claude_Client implements Model_Client {
             $body['system'] = $system_prompt;
         }
 
+        $request_args = URL_Guard::harden_request_args( array(
+            'method'  => 'POST',
+            'headers' => array(
+                'Content-Type'      => 'application/json',
+                'x-api-key'         => $this->api_key,
+                'anthropic-version' => '2023-06-01',
+            ),
+            'body'    => wp_json_encode( $body ),
+            'timeout' => $this->timeout,
+        ) );
+
         return array(
-            'url' => $url,
-            'response' => wp_remote_post( $url, array(
-                'method'  => 'POST',
-                'headers' => array(
-                    'Content-Type'      => 'application/json',
-                    'x-api-key'         => $this->api_key,
-                    'anthropic-version' => '2023-06-01',
-                ),
-                'body'    => wp_json_encode( $body ),
-                'timeout' => $this->timeout,
-            ) ),
+            'url'      => $url,
+            'response' => wp_remote_post( $url, $request_args ),
         );
     }
 
