@@ -15,6 +15,29 @@ class Admin {
         add_action( 'admin_post_opentranslation_run_queue', array( $this, 'handle_run_queue' ) );
         add_action( 'admin_post_opentranslation_retry_failed', array( $this, 'handle_retry_failed' ) );
         add_action( 'admin_post_opentranslation_toggle_language', array( $this, 'handle_toggle_language' ) );
+        add_action( 'admin_notices', array( $this, 'maybe_show_decrypt_warning' ) );
+    }
+
+    /**
+     * 解密失败时明确告警。
+     *
+     * 否则用户只会看到「No models configured」，
+     * 完全无法判断是没配过还是 AUTH_KEY 变更导致读不出来。
+     */
+    public function maybe_show_decrypt_warning() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            return;
+        }
+
+        if ( '' === Encrypted_Options::get_decrypt_failure() ) {
+            return;
+        }
+
+        printf(
+            '<div class="notice notice-error"><p><strong>%s</strong> %s</p></div>',
+            esc_html__( 'OpenTranslation:', 'opentranslation' ),
+            esc_html__( 'Saved model configuration could not be decrypted. This usually means AUTH_KEY in wp-config.php has changed. Please re-enter the model configuration, or restore the original AUTH_KEY.', 'opentranslation' )
+        );
     }
 
     public function enqueue_assets( $hook ) {
