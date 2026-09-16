@@ -76,7 +76,9 @@ class Protector {
             }
         }
 
-        if ( preg_match_all( '/<protect-\d+>/', $text, $matches ) ) {
+        // 容许斜杠：模型可能输出 </protect-N>（把占位符当标签闭合）。
+        // 这种形式不在 tokens 里，会被下面的 isset 判定为无主占位符 → 判失败。
+        if ( preg_match_all( '#</?protect-\d+>#', $text, $matches ) ) {
             foreach ( $matches[0] as $found ) {
                 if ( ! isset( $this->tokens[ $found ] ) && ! in_array( $found, $problems, true ) ) {
                     $problems[] = $found;
@@ -96,11 +98,14 @@ class Protector {
      * 已知理论误报：原文本身字面包含 <protect-N> 时会误判失败。
      * 该条目会被跳过而非写入破损内容，符合「宁可不翻译」的设计取向。
      *
+     * 正则必须容许斜杠：模型会把占位符当成 HTML 标签「闭合」，
+     * 产出 </protect-N>。线上实测 4 条译文因此漏过校验落库。
+     *
      * @param string $text 已 restore 的文本
      * @return bool
      */
     public static function has_residual_placeholder( $text ) {
-        return 1 === preg_match( '/<protect-\d+>/', (string) $text );
+        return 1 === preg_match( '#</?protect-\d+>#', (string) $text );
     }
 
     public function get_tokens() {

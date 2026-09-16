@@ -120,3 +120,43 @@ $p3    = new Protector();
 $prot3 = $p3->protect( 'Total 1TP1T off' );
 ot_assert_same( 'Total <protect-1> off', $prot3, 'TP 的 1TPnT 占位符被保护' );
 ot_assert_same( 'Total 1TP1T off', $p3->restore( $prot3 ), 'TP 占位符正确还原' );
+
+ot_test_group( 'Protector：模型把占位符当标签闭合（线上 4 条落库的缺陷）' );
+
+// 线上实测样本 ru_RU id=6720：
+//   原文 DALI Bus Power&amp;Repeater
+//   模型 Питание шины DALI<protect-1>Реpeater</protect-1>
+// 已知 token 在场，validate 曾判通过；而 </protect-1> 不匹配
+// 旧正则 /<protect-\d+>/，restore 也换不掉它，最终污染落库。
+$pc = new Protector();
+$pc_prot = $pc->protect( 'DALI Bus Power&amp;Repeater' );
+ot_assert_same( 'DALI Bus Power<protect-1>Repeater', $pc_prot, '实体被保护为单个占位符' );
+
+$pc_model = 'Питание шины DALI<protect-1>Реpeater</protect-1>';
+$pc_result = $pc->validate( $pc_model );
+ot_assert_true( is_array( $pc_result ), '闭标签形式被判失败（旧代码此处漏过）' );
+ot_assert_same( array( '</protect-1>' ), $pc_result, '报告的正是那个闭标签' );
+
+// 兜底同样必须认得闭标签
+ot_assert_same(
+    true,
+    Protector::has_residual_placeholder( 'Питание шины DALI&amp;Реpeater</protect-1>' ),
+    '兜底检查认出闭标签残留'
+);
+ot_assert_same(
+    true,
+    Protector::has_residual_placeholder( '开标签残留 <protect-2>' ),
+    '兜底检查仍认得开标签残留'
+);
+ot_assert_same(
+    false,
+    Protector::has_residual_placeholder( '干净译文，无任何占位符' ),
+    '干净译文不误报'
+);
+
+// 开闭标签混杂：两者都不属于本条目时都要报
+$pc2 = new Protector();
+$pc2->protect( '纯文本无可保护内容' );
+$pc2_mixed = $pc2->validate( '译文<protect-5>混杂</protect-7>' );
+ot_assert_true( is_array( $pc2_mixed ), '开闭混杂的无主占位符被判失败' );
+ot_assert_same( 2, count( $pc2_mixed ), '开闭标签各报 1 个' );
