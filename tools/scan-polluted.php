@@ -51,11 +51,56 @@ function ot_tag_multiset( $text ) {
     $set = array();
     if ( preg_match_all( '/<[a-zA-Z\/!][^>]*>/', $text, $m ) ) {
         foreach ( $m[0] as $tag ) {
-            $key         = $tag;
-            $set[ $key ] = isset( $set[ $key ] ) ? $set[ $key ] + 1 : 1;
+            $set[ $tag ] = isset( $set[ $tag ] ) ? $set[ $tag ] + 1 : 1;
         }
     }
     return $set;
+}
+
+/**
+ * 提取文本中所有 HTML 实体，返回「实体 => 出现次数」。
+ *
+ * 旧 restore_missing() 会把丢失 token 的原始值拼到译文末尾，
+ * 当 token 是实体（&amp; / &#8217; 等）时只统计标签会漏检。
+ * 线上实测这类漏检达 1493 条。
+ */
+function ot_entity_multiset( $text ) {
+    $set = array();
+    if ( preg_match_all( '/&[\w#]+;/', $text, $m ) ) {
+        foreach ( $m[0] as $entity ) {
+            $set[ $entity ] = isset( $set[ $entity ] ) ? $set[ $entity ] + 1 : 1;
+        }
+    }
+    return $set;
+}
+
+/**
+ * 译文多重集相对原文的超出部分。
+ */
+function ot_excess( $orig_set, $trans_set ) {
+    $excess = array();
+    foreach ( $trans_set as $key => $count ) {
+        $orig_count = isset( $orig_set[ $key ] ) ? $orig_set[ $key ] : 0;
+        if ( $count > $orig_count ) {
+            $excess[ $key ] = $count - $orig_count;
+        }
+    }
+    return $excess;
+}
+
+/**
+ * 多出的内容是否全部位于译文尾部（拼接痕迹的判据）。
+ */
+function ot_excess_at_tail( $translated, $excess, $tail_pattern ) {
+    if ( ! preg_match( $tail_pattern, $translated, $m ) ) {
+        return false;
+    }
+    foreach ( array_keys( $excess ) as $key ) {
+        if ( false === strpos( $m[0], $key ) ) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /**
@@ -73,35 +118,23 @@ function ot_detect_pollution( $original, $translated ) {
         return 'B_残留TP占位符';
     }
 
-    // C：译文的标签多重集超出原文，且多出的标签位于尾部
-    $orig_tags  = ot_tag_multiset( $original );
-    $trans_tags = ot_tag_multiset( $translated );
+    $tag_excess = ot_excess( ot_tag_multiset( $original ), ot_tag_multiset( $translated ) );
+    if ( ! empty( $tag_excess ) ) {
+        return ot_excess_at_tail( $translated, $tag_excess, '/(?:<[a-zA-Z\/!][^>]*>\s*)+$/' )
+            ? 'C_尾部拼接标签'
+            : 'D_标签数量不符';
+    }
 
-    $excess = array();
-    foreach ( $trans_tags as $tag => $count ) {
-        $orig_count = isset( $orig_tags[ $tag ] ) ? $orig_tags[ $tag ] : 0;
-        if ( $count > $orig_count ) {
-            $excess[ $tag ] = $count - $orig_count;
+    $entity_excess = ot_excess( ot_entity_multiset( $original ), ot_entity_multiset( $translated ) );
+    if ( ! empty( $entity_excess ) ) {
+        // 只有位于尾部才判污染。实体差异出现在正文中间可能是正常翻译，
+        // 例如把英文引号译成中文标点，不应误伤。
+        if ( ot_excess_at_tail( $translated, $entity_excess, '/(?:&[\w#]+;\s*)+$/' ) ) {
+            return 'E_尾部拼接实体';
         }
     }
 
-    if ( empty( $excess ) ) {
-        return '';
-    }
-
-    // 多出的标签必须出现在尾部才算拼接痕迹
-    if ( ! preg_match( '/(?:<[a-zA-Z\/!][^>]*>\s*)+$/', $translated, $m ) ) {
-        return 'D_标签数量不符';
-    }
-
-    $tail = $m[0];
-    foreach ( array_keys( $excess ) as $tag ) {
-        if ( false === strpos( $tail, $tag ) ) {
-            return 'D_标签数量不符';
-        }
-    }
-
-    return 'C_尾部拼接标签';
+    return '';
 }
 
 $languages = \OpenTranslation\TP_Storage_Adapter::get_target_languages();
