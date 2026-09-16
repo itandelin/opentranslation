@@ -15,15 +15,24 @@ $plugin_language = $settings['plugin_language'] ?? 'zh_CN';
         <table class="form-table">
             <tr>
                 <th><label for="ot_batch_size"><?php esc_html_e( 'Batch Size', 'opentranslation' ); ?></label></th>
-                <td><input type="number" min="1" max="50" id="ot_batch_size" name="opentranslation_settings[batch_size]" value="<?php echo esc_attr( $batch_size ); ?>" /></td>
+                <td>
+                    <input type="number" min="1" max="50" id="ot_batch_size" name="opentranslation_settings[batch_size]" value="<?php echo esc_attr( $batch_size ); ?>" />
+                    <p class="description"><?php esc_html_e( 'Maximum items sent to the model per round (1-50). Use 10-20 when the gateway is unstable: a larger batch widens the blast radius of a single failed request.', 'opentranslation' ); ?></p>
+                </td>
             </tr>
             <tr>
                 <th><label for="ot_cron_interval"><?php esc_html_e( 'Cron Interval (minutes)', 'opentranslation' ); ?></label></th>
-                <td><input type="number" min="1" id="ot_cron_interval" name="opentranslation_settings[cron_interval]" value="<?php echo esc_attr( $cron_interval ); ?>" /></td>
+                <td>
+                    <input type="number" min="1" id="ot_cron_interval" name="opentranslation_settings[cron_interval]" value="<?php echo esc_attr( $cron_interval ); ?>" />
+                    <p class="description"><?php esc_html_e( 'Only applies when WP-Cron drives the queue. If Action Scheduler is available (for example bundled with WooCommerce), the queue runs on a fixed 1-minute interval and this setting is ignored. See Queue Runner on the Queue & Logs page for the actual driver in use.', 'opentranslation' ); ?></p>
+                </td>
             </tr>
             <tr>
                 <th><label for="ot_rate_limit"><?php esc_html_e( 'Rate Limit (requests/min)', 'opentranslation' ); ?></label></th>
-                <td><input type="number" min="0" id="ot_rate_limit" name="opentranslation_settings[rate_limit_per_minute]" value="<?php echo esc_attr( $rate_limit ); ?>" /></td>
+                <td>
+                    <input type="number" min="0" id="ot_rate_limit" name="opentranslation_settings[rate_limit_per_minute]" value="<?php echo esc_attr( $rate_limit ); ?>" />
+                    <p class="description"><?php esc_html_e( 'Maximum model request units allowed per minute. Note: 0 means no rate limiting at all, which is not recommended because API costs can run away. The limit is shared globally across all models.', 'opentranslation' ); ?></p>
+                </td>
             </tr>
             <tr>
                 <th><label for="ot_system_prompt"><?php esc_html_e( 'System Prompt', 'opentranslation' ); ?></label></th>
