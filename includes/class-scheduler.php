@@ -12,6 +12,8 @@ class Scheduler {
     const CRON_INTERVAL = 'opentranslation_interval';
     const LOCK_OPTION   = 'opentranslation_queue_lock_until';
     const CURSOR_OPTION = 'opentranslation_queue_cursor';
+    const LAST_RUN_OPTION = 'opentranslation_last_run_stats';
+    const STAT_KEYS = array( 'processed', 'cached', 'passthrough', 'model', 'failed', 'request_units' );
     public function __construct() {
         add_action( self::CRON_HOOK, array( $this, 'run_batch' ) );
         add_action( self::ACTION_HOOK, array( $this, 'run_batch' ) );
@@ -49,6 +51,9 @@ class Scheduler {
             Log::add( '', 'scheduler_run', 'run_batch skipped: queue locked' );
             return;
         }
+        $totals = array_fill_keys( self::STAT_KEYS, 0 );
+        $totals['languages']  = array();
+        $totals['started_at'] = time();
         $should_continue = false;
         $started_at = microtime( true );
         try {
@@ -57,110 +62,185 @@ class Scheduler {
                 Log::add( '', 'scheduler_run', 'TP not active' );
                 return;
             }
-            $settings = get_option( 'opentranslation_settings', array() );
-            $batch_size = isset( $settings['batch_size'] ) ? absint( $settings['batch_size'] ) : 10;
-            $batch_size = max( 1, min( 50, $batch_size ) );
             $languages = TP_Storage_Adapter::get_target_languages();
-            $ordered_languages = $this->get_language_run_order( $languages );
-            Log::add( '', 'scheduler_run', 'languages: ' . wp_json_encode( $ordered_languages ) );
-            if ( empty( $ordered_languages ) ) {
+            Log::add( '', 'scheduler_run', 'languages: ' . wp_json_encode( $this->get_language_run_order( $languages ) ) );
+            if ( empty( $languages ) ) {
                 return;
             }
             $this->cleanup_rate_limit();
-            Log::maybe_cleanup();
-            $round_limit = $this->get_round_limit();
-            for ( $round = 0; $round < $round_limit; $round++ ) {
-                $processed = false;
-                foreach ( $ordered_languages as $language ) {
-                    if ( ! $this->is_language_enabled( $language ) ) {
-                        Log::add( '', 'scheduler_run', "language {$language} disabled" );
-                        continue;
-                    }
-                    if ( $this->process_language( $language, $batch_size ) ) {
-                        $this->advance_language_cursor( $languages, $language );
-                        $ordered_languages = $this->get_language_run_order( $languages );
-                        $should_continue = $this->has_ready_backlog( $languages );
-                        $processed = true;
-                        break;
-                    }
-                }
-                if ( ! $processed || ! $should_continue || ! $this->can_continue_run( $started_at ) || ! $this->is_rate_allowed() ) {
-                    break;
-                }
-            }
+            $should_continue = $this->run_rounds( $languages, $totals, $started_at );
         } finally {
             $this->release_lock();
+            $this->save_last_run( $totals, $started_at );
         }
+        // 日志清理移出持锁区间，避免锁内做删除操作
+        Log::maybe_cleanup();
         if ( $should_continue ) {
             self::maybe_enqueue_follow_up();
         }
     }
+
+    /**
+     * 按语言轮转执行若干轮，返回是否仍有待处理积压。
+     *
+     * @param array $languages  目标语言列表
+     * @param array $totals     统计累加目标（引用）
+     * @param float $started_at microtime 起点，用于时间预算
+     * @return bool
+     */
+    private function run_rounds( $languages, &$totals, $started_at ) {
+        $settings = get_option( 'opentranslation_settings', array() );
+        $batch_size = isset( $settings['batch_size'] ) ? absint( $settings['batch_size'] ) : 10;
+        $batch_size = max( 1, min( 50, $batch_size ) );
+        $ordered_languages = $this->get_language_run_order( $languages );
+        $should_continue = false;
+        $round_limit = $this->get_round_limit();
+        for ( $round = 0; $round < $round_limit; $round++ ) {
+            $processed = false;
+            foreach ( $ordered_languages as $language ) {
+                if ( ! $this->is_language_enabled( $language ) ) {
+                    Log::add( '', 'scheduler_run', "language {$language} disabled" );
+                    continue;
+                }
+                $stats = $this->process_language( $language, $batch_size );
+                // 无论成败都累加：整批失败时 failed / request_units 也必须出现在统计里
+                $this->accumulate_totals( $totals, $stats, $language );
+                if ( $stats['processed'] > 0 ) {
+                    $this->advance_language_cursor( $languages, $language );
+                    $ordered_languages = $this->get_language_run_order( $languages );
+                    $should_continue = $this->has_ready_backlog( $languages );
+                    $processed = true;
+                    break;
+                }
+            }
+            if ( ! $processed || ! $should_continue || ! $this->can_continue_run( $started_at ) || ! $this->is_rate_allowed() ) {
+                break;
+            }
+        }
+        return $should_continue;
+    }
+
+    /**
+     * 累加单语言统计到总计。
+     */
+    private function accumulate_totals( &$totals, $stats, $language ) {
+        foreach ( self::STAT_KEYS as $key ) {
+            $totals[ $key ] += $stats[ $key ];
+        }
+        if ( $stats['processed'] <= 0 ) {
+            return;
+        }
+        if ( ! isset( $totals['languages'][ $language ] ) ) {
+            $totals['languages'][ $language ] = 0;
+        }
+        $totals['languages'][ $language ] += $stats['processed'];
+    }
+
+    /**
+     * 持久化本次执行统计，供后台「Last Run」展示。
+     *
+     * 放在 finally 里：前置检查提前 return 时也留下记录，
+     * 否则页面永远显示上上次的结果，用户无法分辨「没跑」和「跑了但没条目」。
+     */
+    private function save_last_run( $totals, $started_at ) {
+        $totals['finished_at'] = time();
+        $totals['duration']    = round( microtime( true ) - $started_at, 2 );
+        update_option( self::LAST_RUN_OPTION, $totals, false );
+    }
+
+    /**
+     * 上一次队列执行的统计，供后台展示。
+     */
+    public static function get_last_run_stats() {
+        $stats = get_option( self::LAST_RUN_OPTION, array() );
+        return is_array( $stats ) ? $stats : array();
+    }
+
+    /**
+     * 处理单个语言的一批条目。
+     *
+     * @param string $language   目标语言
+     * @param int    $batch_size 送模型的条数上限
+     * @return array{processed:int,cached:int,passthrough:int,model:int,failed:int,request_units:int}
+     */
     private function process_language( $language, $batch_size ) {
-        $translator = new Translator();
+        $stats = array_fill_keys( self::STAT_KEYS, 0 );
         if ( ! $this->is_rate_allowed() ) {
             Log::add( '', 'scheduler_run', 'rate limit reached' );
-            return false;
+            return $stats;
         }
         $items = TP_Storage_Adapter::get_ready_untranslated( $language, $this->get_prefetch_size( $batch_size ) );
-        Log::add( '', 'scheduler_run', "language {$language} batch 0 ready items: " . count( $items ) );
+        Log::add( '', 'scheduler_run', "language {$language} ready items: " . count( $items ) );
         if ( empty( $items ) ) {
-            return false;
+            return $stats;
         }
+        $buckets = $this->split_items_into_buckets( $items, $batch_size );
         $translations = array();
-        $request_units = 0;
+        foreach ( $buckets['passthrough'] as $item ) {
+            $translations[] = array( 'id' => $item['id'], 'translated' => $item['original'] );
+        }
+        foreach ( $buckets['cached'] as $item ) {
+            $translations[] = array( 'id' => $item['id'], 'translated' => $item['cached_translation'] );
+        }
+        $stats['passthrough'] = count( $buckets['passthrough'] );
+        $stats['cached']      = count( $buckets['cached'] );
+        if ( ! empty( $buckets['model'] ) ) {
+            $translator = new Translator();
+            $results    = $translator->translate_batch( $buckets['model'], $language );
+            $stats['request_units'] = isset( $results['request_units'] ) ? (int) $results['request_units'] : 0;
+            $model_results   = ! empty( $results['translations'] ) ? $results['translations'] : array();
+            $stats['model']  = count( $model_results );
+            $stats['failed'] = max( 0, count( $buckets['model'] ) - $stats['model'] );
+            $translations    = array_merge( $translations, $model_results );
+        }
+        $translations       = $this->dedupe_translations( $translations );
+        $stats['processed'] = count( $translations );
+        Log::add( '', 'scheduler_run', "language {$language} translations: {$stats['processed']}" );
+        if ( ! empty( $translations ) ) {
+            TP_Storage_Adapter::bulk_update_translations( $language, $translations );
+        }
+        $this->record_request_units( $stats['request_units'] );
+        return $stats;
+    }
+
+    /**
+     * 把条目分流为缓存命中、直通、送模型三组。
+     *
+     * @return array{cached:array,passthrough:array,model:array}
+     */
+    private function split_items_into_buckets( $items, $batch_size ) {
         $passthrough_limit = $this->get_passthrough_batch_limit( $batch_size );
-        $cached_items = array();
-        $passthrough_items = array();
-        $model_items = array();
+        $buckets = array( 'cached' => array(), 'passthrough' => array(), 'model' => array() );
         foreach ( $items as $item ) {
+            $quick_count = count( $buckets['cached'] ) + count( $buckets['passthrough'] );
             if ( ! empty( $item['cached_translation'] ) ) {
-                if ( count( $cached_items ) + count( $passthrough_items ) < $passthrough_limit ) {
-                    $cached_items[] = $item;
+                if ( $quick_count < $passthrough_limit ) {
+                    $buckets['cached'][] = $item;
                 }
                 continue;
             }
             if ( null !== Translator::get_passthrough_translation( $item['original'] ) ) {
-                if ( count( $cached_items ) + count( $passthrough_items ) < $passthrough_limit ) {
-                    $passthrough_items[] = $item;
+                if ( $quick_count < $passthrough_limit ) {
+                    $buckets['passthrough'][] = $item;
                 }
                 continue;
             }
-            if ( count( $model_items ) < $batch_size ) {
-                $model_items[] = $item;
+            if ( count( $buckets['model'] ) < $batch_size ) {
+                $buckets['model'][] = $item;
             }
         }
-        foreach ( $passthrough_items as $item ) {
-            $translations[] = array(
-                'id'         => $item['id'],
-                'translated' => $item['original'],
-            );
+        return $buckets;
+    }
+
+    /**
+     * 同一 id 只保留最后一次结果。
+     */
+    private function dedupe_translations( $translations ) {
+        $by_id = array();
+        foreach ( $translations as $item ) {
+            $by_id[ (string) $item['id'] ] = $item;
         }
-        foreach ( $cached_items as $item ) {
-            $translations[] = array(
-                'id'         => $item['id'],
-                'translated' => $item['cached_translation'],
-            );
-        }
-        if ( ! empty( $cached_items ) ) {
-            Log::add( '', 'scheduler_run', "language {$language} batch 0 cached: " . count( $cached_items ) );
-        }
-        if ( ! empty( $passthrough_items ) ) {
-            Log::add( '', 'scheduler_run', "language {$language} batch 0 passthrough: " . count( $passthrough_items ) );
-        }
-        if ( ! empty( $model_items ) ) {
-            $results = $translator->translate_batch( $model_items, $language );
-            $request_units = isset( $results['request_units'] ) ? (int) $results['request_units'] : 0;
-            if ( ! empty( $results['translations'] ) ) {
-                $translations = array_merge( $translations, $results['translations'] );
-            }
-        }
-        $translated_count = count( $translations );
-        Log::add( '', 'scheduler_run', "language {$language} batch 0 translations: {$translated_count}" );
-        if ( ! empty( $translations ) ) {
-            TP_Storage_Adapter::bulk_update_translations( $language, $translations );
-        }
-        $this->record_request_units( $request_units );
-        return $translated_count > 0;
+        return array_values( $by_id );
     }
     private function is_language_enabled( $language ) {
         $settings = get_option( 'opentranslation_settings', array() );

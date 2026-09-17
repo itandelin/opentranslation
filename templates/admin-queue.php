@@ -15,7 +15,7 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
     ?>
 
     <?php if ( 'queued' === $message ) : ?>
-        <div class="notice notice-success"><p><?php esc_html_e( 'Queue triggered.', 'opentranslation' ); ?></p></div>
+        <div class="notice notice-success"><p><?php esc_html_e( '队列已触发。任务在后台异步执行，稍后刷新本页可在「Last Run」看到执行统计。', 'opentranslation' ); ?></p></div>
     <?php elseif ( 'retried' === $message ) : ?>
         <div class="notice notice-success"><p><?php esc_html_e( 'Failed items reset and queue triggered.', 'opentranslation' ); ?></p></div>
     <?php elseif ( 'toggled' === $message ) : ?>
@@ -46,6 +46,44 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
         <div class="notice notice-warning">
             <p><?php esc_html_e( 'WP-Cron is disabled in wp-config.php. The queue will not run automatically. Please use the "Run Queue Now" button or set up a real system cron job.', 'opentranslation' ); ?></p>
         </div>
+    <?php endif; ?>
+
+    <?php $last_run = \OpenTranslation\Scheduler::get_last_run_stats(); ?>
+    <?php if ( ! empty( $last_run ) ) : ?>
+        <h2><?php esc_html_e( 'Last Run', 'opentranslation' ); ?></h2>
+        <ul>
+            <li><strong><?php esc_html_e( 'Finished', 'opentranslation' ); ?>:</strong>
+                <?php
+                if ( ! empty( $last_run['finished_at'] ) ) {
+                    printf(
+                        /* translators: %s is a human readable time difference. */
+                        esc_html__( '%s ago', 'opentranslation' ),
+                        esc_html( human_time_diff( (int) $last_run['finished_at'], time() ) )
+                    );
+                }
+                if ( isset( $last_run['duration'] ) ) {
+                    echo ' (' . esc_html( $last_run['duration'] ) . 's)';
+                }
+                ?>
+            </li>
+            <li><strong><?php esc_html_e( 'Written back', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $last_run['processed'] ?? 0 ); ?></li>
+            <li><strong><?php esc_html_e( 'From model', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $last_run['model'] ?? 0 ); ?></li>
+            <li><strong><?php esc_html_e( 'From cache', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $last_run['cached'] ?? 0 ); ?></li>
+            <li><strong><?php esc_html_e( 'Passthrough', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $last_run['passthrough'] ?? 0 ); ?></li>
+            <li><strong><?php esc_html_e( 'Failed', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $last_run['failed'] ?? 0 ); ?></li>
+            <li><strong><?php esc_html_e( 'API request units', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $last_run['request_units'] ?? 0 ); ?></li>
+            <?php if ( ! empty( $last_run['languages'] ) ) : ?>
+                <li><strong><?php esc_html_e( 'By language', 'opentranslation' ); ?>:</strong>
+                    <?php
+                    $pairs = array();
+                    foreach ( $last_run['languages'] as $lang_code => $count ) {
+                        $pairs[] = $lang_code . ': ' . (int) $count;
+                    }
+                    echo esc_html( implode( ' / ', $pairs ) );
+                    ?>
+                </li>
+            <?php endif; ?>
+        </ul>
     <?php endif; ?>
 
     <p>

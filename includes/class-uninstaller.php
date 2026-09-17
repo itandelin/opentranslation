@@ -36,6 +36,7 @@ class Uninstaller {
             'opentranslation_queue_cursor',
             'opentranslation_decrypt_failed',
             'opentranslation_log_cleanup_at',
+            'opentranslation_last_run_stats',
         );
     }
 
