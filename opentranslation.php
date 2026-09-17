@@ -37,6 +37,7 @@ $ot_files = array(
     'class-tp-storage-adapter',
     'class-translator',
     'class-scheduler',
+    'class-admin-ajax',
     'class-admin',
     'class-plugin',
 );
