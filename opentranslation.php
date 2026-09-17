@@ -38,6 +38,7 @@ $ot_files = array(
     'class-translator',
     'class-scheduler',
     'class-admin-ajax',
+    'class-admin-actions',
     'class-admin',
     'class-plugin',
 );

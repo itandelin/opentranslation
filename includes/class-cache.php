@@ -128,4 +128,70 @@ class Cache {
 
         return $counts;
     }
+
+    /**
+     * 失败条目列表，附带最近一条相关日志。
+     *
+     * @param string $language 为空则不筛选
+     * @param int    $limit    每页条数
+     * @param int    $offset   偏移
+     * @return array
+     */
+    public static function get_failed_items( $language = '', $limit = 20, $offset = 0 ) {
+        global $wpdb;
+        $cache_table = $wpdb->prefix . 'opentranslation_cache';
+        $log_table   = $wpdb->prefix . 'opentranslation_log';
+
+        $sql = "SELECT c.id, c.cache_key, c.source_text, c.target_lang, c.context,
+                       c.retry_count, c.next_retry_at, c.updated_at,
+                       ( SELECT l.message FROM {$log_table} l
+                         WHERE l.cache_key = c.cache_key
+                         ORDER BY l.id DESC LIMIT 1 ) AS last_message
+                FROM {$cache_table} c
+                WHERE c.status = 'failed'";
+
+        if ( '' !== $language ) {
+            $sql .= $wpdb->prepare( ' AND c.target_lang = %s', $language );
+        }
+
+        $sql .= $wpdb->prepare( ' ORDER BY c.updated_at DESC LIMIT %d OFFSET %d', $limit, $offset );
+
+        return $wpdb->get_results( $sql, ARRAY_A );
+    }
+
+    public static function count_failed_items( $language = '' ) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'opentranslation_cache';
+
+        if ( '' !== $language ) {
+            return (int) $wpdb->get_var(
+                $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE status = 'failed' AND target_lang = %s", $language )
+            );
+        }
+
+        return (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE status = 'failed'" );
+    }
+
+    /**
+     * 重置单条为待翻译。
+     *
+     * @param string $cache_key 32 位 md5
+     * @return bool
+     */
+    public static function reset_item( $cache_key ) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'opentranslation_cache';
+
+        $result = $wpdb->update(
+            $table,
+            array( 'status' => 'pending', 'retry_count' => 0, 'next_retry_at' => null ),
+            array( 'cache_key' => $cache_key ),
+            array( '%s', '%d', '%s' ),
+            array( '%s' )
+        );
+
+        wp_cache_delete( $cache_key, self::CACHE_GROUP );
+
+        return false !== $result;
+    }
 }

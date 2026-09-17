@@ -30,6 +30,7 @@ class Plugin {
         if ( is_admin() ) {
             new Admin();
             new Admin_Ajax();
+            new Admin_Actions();
         }
 
         new Scheduler();

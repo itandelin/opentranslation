@@ -10,9 +10,6 @@ class Admin {
         add_action( 'admin_menu', array( $this, 'register_menus' ) );
         add_action( 'admin_init', array( $this, 'register_settings' ) );
         add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
-        add_action( 'admin_post_opentranslation_run_queue', array( $this, 'handle_run_queue' ) );
-        add_action( 'admin_post_opentranslation_retry_failed', array( $this, 'handle_retry_failed' ) );
-        add_action( 'admin_post_opentranslation_toggle_language', array( $this, 'handle_toggle_language' ) );
         add_action( 'admin_notices', array( $this, 'maybe_show_decrypt_warning' ) );
     }
 
@@ -68,6 +65,7 @@ class Admin {
         add_submenu_page( 'opentranslation', __( 'Settings', 'opentranslation' ), __( 'Settings', 'opentranslation' ), 'manage_options', 'opentranslation', array( $this, 'render_settings_page' ) );
         add_submenu_page( 'opentranslation', __( 'Models', 'opentranslation' ), __( 'Models', 'opentranslation' ), 'manage_options', 'opentranslation-models', array( $this, 'render_models_page' ) );
         add_submenu_page( 'opentranslation', __( 'Queue & Logs', 'opentranslation' ), __( 'Queue & Logs', 'opentranslation' ), 'manage_options', 'opentranslation-queue', array( $this, 'render_queue_page' ) );
+        add_submenu_page( 'opentranslation', __( 'Failures', 'opentranslation' ), __( 'Failures', 'opentranslation' ), 'manage_options', 'opentranslation-failures', array( $this, 'render_failures_page' ) );
     }
 
     public function register_settings() {
@@ -125,6 +123,23 @@ class Admin {
         $disabled       = isset( $settings['disabled_languages'] ) ? $settings['disabled_languages'] : array();
         $logs           = Log::get_recent( 50 );
         require OPENTRANSLATION_PLUGIN_DIR . 'templates/admin-queue.php';
+    }
+
+    public function render_failures_page() {
+        $languages = TP_Storage_Adapter::get_target_languages();
+
+        $language = isset( $_GET['lang'] ) ? sanitize_text_field( wp_unslash( $_GET['lang'] ) ) : '';
+        if ( '' !== $language && ! in_array( $language, $languages, true ) ) {
+            $language = '';
+        }
+
+        $page     = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+        $per_page = 20;
+
+        $items = Cache::get_failed_items( $language, $per_page, ( $page - 1 ) * $per_page );
+        $total = Cache::count_failed_items( $language );
+
+        require OPENTRANSLATION_PLUGIN_DIR . 'templates/admin-failures.php';
     }
 
     private function handle_models_actions() {
@@ -228,47 +243,5 @@ class Admin {
         $models[ $index ] = array_merge( $models[ $index ], $fields );
         Encrypted_Options::set( 'opentranslation_models', $models );
         add_settings_error( 'opentranslation_models', 'model_updated', __( '模型已更新。', 'opentranslation' ), 'success' );
-    }
-
-    public function handle_run_queue() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'Unauthorized.', 'opentranslation' ) );
-        }
-        check_admin_referer( 'opentranslation_run_queue' );
-        Scheduler::trigger_manual();
-        wp_safe_redirect( admin_url( 'admin.php?page=opentranslation-queue&message=queued' ) );
-        exit;
-    }
-
-    public function handle_retry_failed() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'Unauthorized.', 'opentranslation' ) );
-        }
-        check_admin_referer( 'opentranslation_retry_failed' );
-        global $wpdb;
-        $table = $wpdb->prefix . 'opentranslation_cache';
-        $wpdb->query( "UPDATE {$table} SET status = 'pending', retry_count = 0, next_retry_at = NULL WHERE status = 'failed'" );
-        Scheduler::trigger_manual();
-        wp_safe_redirect( admin_url( 'admin.php?page=opentranslation-queue&message=retried' ) );
-        exit;
-    }
-
-    public function handle_toggle_language() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'Unauthorized.', 'opentranslation' ) );
-        }
-        check_admin_referer( 'opentranslation_toggle_language' );
-        $lang = isset( $_GET['lang'] ) ? sanitize_text_field( wp_unslash( $_GET['lang'] ) ) : '';
-        $settings = get_option( 'opentranslation_settings', array() );
-        $disabled = isset( $settings['disabled_languages'] ) ? $settings['disabled_languages'] : array();
-        if ( in_array( $lang, $disabled, true ) ) {
-            $disabled = array_diff( $disabled, array( $lang ) );
-        } else {
-            $disabled[] = $lang;
-        }
-        $settings['disabled_languages'] = array_values( $disabled );
-        update_option( 'opentranslation_settings', $settings );
-        wp_safe_redirect( admin_url( 'admin.php?page=opentranslation-queue&message=toggled' ) );
-        exit;
     }
 }

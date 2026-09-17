@@ -125,7 +125,9 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
                     <td><?php echo esc_html( $lang_counts['pending'] ); ?></td>
                     <td>
                         <?php if ( $lang_counts['failed'] > 0 ) : ?>
-                            <strong style="color:#d63638;"><?php echo esc_html( $lang_counts['failed'] ); ?></strong>
+                            <a href="<?php echo esc_url( admin_url( 'admin.php?page=opentranslation-failures&lang=' . urlencode( $lang ) ) ); ?>">
+                                <strong style="color:#d63638;"><?php echo esc_html( $lang_counts['failed'] ); ?></strong>
+                            </a>
                         <?php else : ?>
                             0
                         <?php endif; ?>
