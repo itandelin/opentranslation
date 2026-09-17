@@ -82,5 +82,49 @@
                 $result.text(opentranslation_ajax.strings.test_failed).css('color', '#d63638');
             });
         });
+
+        // 模型编辑：把行数据回填到表单
+        $('.ot-edit-model-btn').on('click', function () {
+            var $btn = $(this);
+
+            $('#ot-form-index').val($btn.data('index'));
+            $('select[name="provider"]').val($btn.data('provider'));
+            $('input[name="base_url"]').val($btn.data('base-url'));
+            $('input[name="priority"]').val($btn.data('priority'));
+            $('input[name="temperature"]').val($btn.data('temperature'));
+            $('input[name="max_tokens"]').val($btn.data('max-tokens'));
+            $('#ot-api-key').val('');
+
+            // model 字段可能已被「获取模型列表」替换为 select
+            $('[name="model"]').val($btn.data('model'));
+
+            $('#ot-form-title').text(opentranslation_ajax.strings.edit_model);
+            // 隐藏并禁用「Add」：display:none 的提交按钮仍是表单默认按钮，
+            // 不禁用的话在输入框按回车会以新增模式提交，产生重复模型
+            $('#ot-submit-add').hide().prop('disabled', true);
+            $('#ot-submit-update').show();
+            $('#ot-cancel-edit').show();
+            $('#ot-api-key-hint').show();
+
+            $('html, body').animate({ scrollTop: $('#ot-model-form').offset().top - 40 }, 200);
+        });
+
+        $('#ot-cancel-edit').on('click', function () {
+            $('#ot-model-form')[0].reset();
+            $('#ot-form-index').val('');
+            $('#ot-form-title').text(opentranslation_ajax.strings.add_model);
+            $('#ot-submit-add').show().prop('disabled', false);
+            $('#ot-submit-update').hide();
+            $('#ot-cancel-edit').hide();
+            $('#ot-api-key-hint').hide();
+        });
+
+        // 非 HTTPS 后台提示（S8）
+        if (window.location.protocol !== 'https:') {
+            $('#ot-api-key').after(
+                $('<p class="description" style="color:#d63638;"></p>')
+                    .text(opentranslation_ajax.strings.insecure_transport)
+            );
+        }
     });
 })(jQuery);

@@ -55,6 +55,9 @@ class Admin {
                 'test_model'   => __( '测试', 'opentranslation' ),
                 'test_success' => __( '连接成功', 'opentranslation' ),
                 'test_failed'  => __( '连接失败', 'opentranslation' ),
+                'edit_model'   => __( 'Edit Model', 'opentranslation' ),
+                'add_model'    => __( 'Add Model', 'opentranslation' ),
+                'insecure_transport' => __( '当前后台不是 HTTPS，API Key 将以明文经网络传输。建议为后台启用 HTTPS。', 'opentranslation' ),
             ),
             'test_nonce' => wp_create_nonce( 'opentranslation_test_model_nonce' ),
         ) );
@@ -136,39 +139,94 @@ class Admin {
         }
 
         $models = Encrypted_Options::get( 'opentranslation_models', array() );
+        $index  = isset( $_POST['model_index'] ) ? absint( $_POST['model_index'] ) : -1;
 
         if ( isset( $_POST['add_model'] ) ) {
-            $base_url = esc_url_raw( wp_unslash( $_POST['base_url'] ?? '' ) );
-
-            // 留空表示使用官方地址（由 Client 构造器回落），无需校验
-            if ( '' !== $base_url ) {
-                $reason = URL_Guard::get_rejection_reason( $base_url );
-                if ( '' !== $reason ) {
-                    add_settings_error( 'opentranslation_models', 'invalid_base_url', $reason, 'error' );
-                    return;
-                }
-            }
-
-            $models[] = array(
-                'provider'    => sanitize_text_field( wp_unslash( $_POST['provider'] ?? 'openai' ) ),
-                // API Key 用 trim 而非 sanitize_text_field，理由同上（S8）
-                'api_key'     => isset( $_POST['api_key'] ) ? trim( wp_unslash( $_POST['api_key'] ) ) : '',
-                'base_url'    => $base_url,
-                'model'       => isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : 'gpt-4o',
-                'priority'    => isset( $_POST['priority'] ) ? absint( $_POST['priority'] ) : 10,
-                'temperature' => isset( $_POST['temperature'] ) ? (float) $_POST['temperature'] : 0.3,
-                'max_tokens'  => isset( $_POST['max_tokens'] ) ? absint( $_POST['max_tokens'] ) : 0,
-            );
+            $this->add_model( $models );
+        } elseif ( isset( $_POST['update_model'] ) ) {
+            $this->update_model( $models, $index );
+        } elseif ( isset( $_POST['delete_model'] ) && isset( $models[ $index ] ) ) {
+            array_splice( $models, $index, 1 );
             Encrypted_Options::set( 'opentranslation_models', $models );
         }
+    }
 
-        if ( isset( $_POST['delete_model'] ) && isset( $_POST['model_index'] ) ) {
-            $index = absint( $_POST['model_index'] );
-            if ( isset( $models[ $index ] ) ) {
-                array_splice( $models, $index, 1 );
-                Encrypted_Options::set( 'opentranslation_models', $models );
+    /**
+     * 从表单读取模型字段（不含 api_key）。
+     *
+     * Base URL 非法时已写入 settings_error，返回 null。
+     * 留空表示使用官方地址（由 Client 构造器回落），无需校验。
+     *
+     * @return array|null
+     */
+    private function read_model_fields() {
+        $base_url = esc_url_raw( wp_unslash( $_POST['base_url'] ?? '' ) );
+
+        if ( '' !== $base_url ) {
+            $reason = URL_Guard::get_rejection_reason( $base_url );
+            if ( '' !== $reason ) {
+                add_settings_error( 'opentranslation_models', 'invalid_base_url', $reason, 'error' );
+                return null;
             }
         }
+
+        return array(
+            'provider'    => sanitize_text_field( wp_unslash( $_POST['provider'] ?? 'openai' ) ),
+            'base_url'    => $base_url,
+            'model'       => isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : 'gpt-4o',
+            'priority'    => isset( $_POST['priority'] ) ? absint( $_POST['priority'] ) : 10,
+            'temperature' => self::clamp_temperature( $_POST['temperature'] ?? 0.3 ),
+            'max_tokens'  => isset( $_POST['max_tokens'] ) ? absint( $_POST['max_tokens'] ) : 0,
+        );
+    }
+
+    /**
+     * API Key 用 trim 而非 sanitize_text_field：
+     * 后者会剥离特殊字符，可能静默损坏部分网关的自定义格式密钥（S8）。
+     */
+    private static function posted_api_key() {
+        return isset( $_POST['api_key'] ) ? trim( wp_unslash( $_POST['api_key'] ) ) : '';
+    }
+
+    /**
+     * temperature 夹取到 0-2。
+     *
+     * OpenAI 与 Claude 均要求该范围，超界会被上游拒绝。
+     */
+    private static function clamp_temperature( $raw ) {
+        return max( 0.0, min( 2.0, (float) $raw ) );
+    }
+
+    private function add_model( array $models ) {
+        $fields = $this->read_model_fields();
+        if ( null === $fields ) {
+            return;
+        }
+
+        $fields['api_key'] = self::posted_api_key();
+        $models[]          = $fields;
+        Encrypted_Options::set( 'opentranslation_models', $models );
+    }
+
+    private function update_model( array $models, $index ) {
+        if ( ! isset( $models[ $index ] ) ) {
+            return;
+        }
+
+        $fields = $this->read_model_fields();
+        if ( null === $fields ) {
+            return;
+        }
+
+        // API Key 留空表示保持原值，避免为改其他字段而重新输入密钥
+        $new_key = self::posted_api_key();
+        if ( '' !== $new_key ) {
+            $fields['api_key'] = $new_key;
+        }
+
+        $models[ $index ] = array_merge( $models[ $index ], $fields );
+        Encrypted_Options::set( 'opentranslation_models', $models );
+        add_settings_error( 'opentranslation_models', 'model_updated', __( '模型已更新。', 'opentranslation' ), 'success' );
     }
 
     public function handle_run_queue() {
