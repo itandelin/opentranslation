@@ -24,6 +24,9 @@ if ( ! function_exists( '__' ) ) {
 // 过滤器：测试中不挂钩子，直接返回默认值
 if ( ! function_exists( 'apply_filters' ) ) {
     function apply_filters( $tag, $value ) {
+        if ( isset( $GLOBALS['ot_test_filters'][ $tag ] ) ) {
+            return call_user_func( $GLOBALS['ot_test_filters'][ $tag ], $value );
+        }
         return $value;
     }
 }
@@ -84,4 +87,50 @@ if ( ! function_exists( 'wp_parse_url' ) ) {
 
 if ( ! defined( 'DAY_IN_SECONDS' ) ) {
     define( 'DAY_IN_SECONDS', 86400 );
+}
+
+// 极简过滤器注册表：测试里可用 add_filter 覆盖默认值（如缩短重试延迟）
+if ( ! function_exists( 'add_filter' ) ) {
+    function add_filter( $tag, $callback ) {
+        $GLOBALS['ot_test_filters'][ $tag ] = $callback;
+    }
+    function remove_filter( $tag ) {
+        unset( $GLOBALS['ot_test_filters'][ $tag ] );
+    }
+}
+// 覆盖上方的直通版 apply_filters：有注册则调用，无则返回默认值
+if ( ! isset( $GLOBALS['ot_test_filters'] ) ) {
+    $GLOBALS['ot_test_filters'] = array();
+}
+
+// HTTP stub：wp_remote_post 按队列依次返回预设响应，并记录请求体
+if ( ! function_exists( 'wp_remote_post' ) ) {
+    $GLOBALS['ot_http_queue'] = array();
+    $GLOBALS['ot_http_log']   = array();
+
+    function ot_http_enqueue( $code, $body ) {
+        $GLOBALS['ot_http_queue'][] = ( $code instanceof WP_Error )
+            ? $code
+            : array( 'response' => array( 'code' => $code, 'message' => 'stub' ), 'body' => $body );
+    }
+    function ot_http_reset() {
+        $GLOBALS['ot_http_queue'] = array();
+        $GLOBALS['ot_http_log']   = array();
+    }
+    function wp_remote_post( $url, $args = array() ) {
+        $GLOBALS['ot_http_log'][] = array( 'url' => $url, 'body' => json_decode( $args['body'], true ) );
+        if ( empty( $GLOBALS['ot_http_queue'] ) ) {
+            return new WP_Error( 'stub_exhausted', 'no queued response' );
+        }
+        return array_shift( $GLOBALS['ot_http_queue'] );
+    }
+    function wp_remote_retrieve_body( $r ) {
+        return is_array( $r ) && isset( $r['body'] ) ? $r['body'] : '';
+    }
+    function wp_remote_retrieve_response_code( $r ) {
+        return is_array( $r ) && isset( $r['response']['code'] ) ? $r['response']['code'] : '';
+    }
+    function wp_remote_retrieve_response_message( $r ) {
+        return is_array( $r ) && isset( $r['response']['message'] ) ? $r['response']['message'] : '';
+    }
 }
