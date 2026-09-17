@@ -76,17 +76,6 @@ class TP_Storage_Adapter {
         return $candidates[0];
     }
 
-    public static function get_untranslated( $language, $limit = 10, $offset = 0 ) {
-        global $wpdb;
-        $table = self::get_dictionary_table( $language );
-        $sql = $wpdb->prepare(
-            "SELECT id, original, translated, status FROM `{$table}` WHERE ( translated = '' OR translated IS NULL ) AND status != 2 ORDER BY id ASC LIMIT %d OFFSET %d",
-            $limit,
-            $offset
-        );
-        return $wpdb->get_results( $sql, ARRAY_A );
-    }
-
     public static function get_ready_untranslated( $language, $limit = 10, $offset = 0 ) {
         global $wpdb;
         $table = self::get_dictionary_table( $language );
@@ -196,18 +185,38 @@ class TP_Storage_Adapter {
             Log::add( '', 'tp_bulk_update_failed', $wpdb->last_error );
         }
         self::flush_count_cache( $language );
+        self::clear_tp_cache();
         return false !== $result;
     }
 
+    /**
+     * 清理 TranslatePress 缓存，使新译文即时在前台生效。
+     *
+     * 加节流：队列可能每分钟写回一次，
+     * 频繁清缓存会抵消 TP 缓存本身的收益。
+     */
     public static function clear_tp_cache() {
+        $throttle = (int) apply_filters( 'opentranslation_tp_cache_clear_throttle', 5 * MINUTE_IN_SECONDS );
+        $throttle = max( 0, $throttle );
+
+        if ( $throttle > 0 ) {
+            $last = (int) get_option( 'opentranslation_tp_cache_cleared_at', 0 );
+            if ( ( time() - $last ) < $throttle ) {
+                return;
+            }
+        }
+
         if ( class_exists( 'TRP_Translate_Press' ) ) {
             $trp = \TRP_Translate_Press::get_trp_instance();
             if ( $trp && method_exists( $trp, 'clear_cache' ) ) {
                 $trp->clear_cache();
             }
         }
+
         if ( function_exists( 'trp_clear_cache' ) ) {
             trp_clear_cache();
         }
+
+        update_option( 'opentranslation_tp_cache_cleared_at', time(), false );
     }
 }
