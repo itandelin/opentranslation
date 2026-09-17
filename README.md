@@ -114,18 +114,24 @@ OpenTranslation -> Models
   - `Claude`
 - `API Key`
 - `Base URL`
-  - 可留空使用官方地址
+  - 留空时使用 Provider 官方地址：OpenAI 为 `https://api.openai.com/v1/`，Claude 为 `https://api.anthropic.com/v1/`
   - 也可以填写兼容网关地址
+  - 必须是 `https`，且不接受内网 / 保留地址（回环、私有网段、云元数据地址等）；自建网关如需豁免可用 `opentranslation_allowed_base_url_hosts` 过滤器
 - `Model`
 - `Priority`
   - 数字越小优先级越高
+  - 每个模型应设置不同的优先级，重复时降级顺序不可预期，页面会给出告警
 - `Temperature`
+  - 有效范围 0-2，超出会被夹取到边界
 - `Max Tokens`
+  - 填 `0` 表示由模型决定
+  - Claude 因 API 要求 `max_tokens >= 1`，填 0 时插件自动使用 4096
 
 说明：
 
 - 如果主模型失败，插件会按优先级自动切换到备用模型。
-- 模型页支持“获取模型列表”和“测试”。
+- 模型页支持“获取模型列表”、“测试”和“编辑”。编辑时 API Key 留空表示保持原值，不需要重新粘贴密钥。
+- “测试”是只读操作，不会改写已保存的 Base URL。
 
 ### 2. 配置插件设置
 
@@ -140,9 +146,10 @@ OpenTranslation -> Settings
 - `Batch Size`
   - 每轮模型翻译的目标条数上限
 - `Cron Interval (minutes)`
-  - 非 Action Scheduler 场景下的轮询间隔
+  - 仅 WP-Cron 模式生效。若站点已安装 Action Scheduler（如随 WooCommerce），队列以固定 1 分钟间隔驱动，此项被忽略。实际驱动方式见 Queue 页的 `Queue Runner`
 - `Rate Limit (requests/min)`
-  - 后台每分钟请求单位上限
+  - 后台每分钟请求单位上限（一次 HTTP 尝试计 1 个单位，重试与切块都会累加）
+  - 填 `0` 表示完全不限流（不推荐，可能导致 API 费用失控）。该限制全局共享，不区分模型
 - `System Prompt`
   - 模型翻译提示词
 - `Plugin Language`
@@ -203,21 +210,26 @@ OpenTranslation -> Queue & Logs
 用于管理模型列表。支持：
 
 - 新增模型
+- 编辑模型（API Key 留空保持原值）
 - 删除模型
 - 测试模型
 - 设置主备顺序
+- 列表展示 Temperature、Max Tokens、完整 Base URL、API Key 长度
 
 ### Queue & Logs
 
 用于观察后台翻译状态。你可以看到：
 
-- `Pending`
-- `Translated`
-- `Failed`
+- `Cache Overview`：缓存表的全局 `Pending` / `Translated` / `Failed`（所有语言合计）
 - 当前由 `Action Scheduler` 还是 `WP-Cron` 驱动
 - 下次运行时间
-- 各语言剩余未翻译数量
-- 最近日志明细
+- `Last Run`：上一次队列执行的统计——写回条数、来自模型 / 缓存 / 直通的条数、失败数、API 请求单位、按语言计数、耗时
+- 各语言的 TP 未翻译数与缓存表的按语言计数，失败数可点击跳转到 `Failures` 页
+- 日志：按动作筛选、分级着色、分页
+
+### Failures
+
+失败条目详情页。列出已达到最大重试次数的条目，显示原文、语言、重试次数、最后一条日志消息，支持按语言筛选与单条 `Retry`。单条重试会把该条目重置为待翻译，在下次队列执行时再试一次。
 
 ## 缓存、重试与失败处理
 
@@ -237,6 +249,17 @@ OpenTranslation -> Queue & Logs
   - 对兼容网关常见的 `HTTP 524 + empty body`
   - 插件会自动重试
   - 对部分失败场景还会进一步拆小批次再试
+  - OpenAI 与 Claude 两类 Provider 均支持重试与失败切块，重试次数与延迟可用 `opentranslation_openai_max_attempts` / `opentranslation_claude_max_attempts` 等过滤器调整
+
+- 占位符保护（严格模式）
+  - 每个条目使用独立的占位符映射
+  - 若模型返回的译文缺失占位符，或残留未知的 `<protect-N>`，该条目判为失败并进入重试
+  - 重试 3 次后标记 `failed`，保持原文不翻译，可在 `Failures` 页人工处理
+  - 设计上宁可不翻译，也不产出破损 HTML
+  - TranslatePress 自身的 `1TP1T` 形式占位符也会被保护
+
+- 写回后清理 TP 缓存
+  - 译文写回字典表后会调用 TranslatePress 的缓存清理入口（如该版本提供），带 5 分钟节流，可用 `opentranslation_tp_cache_clear_throttle` 过滤器调整
 
 ## TranslatePress 接入说明
 
@@ -305,7 +328,7 @@ apply_filters( 'opentranslation_allow_frontend_live_translation', false )
 
 当前实现会优先把任务排到异步队列，而不是在管理页里同步跑完整翻译。这样是为了避免后台页面卡住。
 
-请到 `Queue & Logs` 页面查看：
+等待 30-60 秒后刷新 `Queue & Logs` 页面，`Last Run` 区块会显示这次执行的统计：写回条数、来自模型 / 缓存 / 直通各多少、失败数、API 请求单位、按语言计数。若 `Last Run` 没有更新，再查看：
 
 - `Next Run`
 - `Queue Runner`
@@ -344,15 +367,16 @@ apply_filters( 'opentranslation_allow_frontend_live_translation', false )
 
 ## 日志与诊断
 
-你可以在 `Queue & Logs` 页面直接查看最近日志。
+你可以在 `Queue & Logs` 页面直接查看日志，支持按动作筛选和分页。
 
-日志里常见的动作包括：
+日志分四级并着色显示：
 
-- `scheduler_run`
-- `model_fallback`
-- `retry`
-- `failed`
-- `placeholder_restored`
+- `error`：`failed`、`tp_engine_error`、`tp_bulk_update_failed`、`cache_*_failed`
+- `warn`：`retry`、`model_fallback`
+- `info`：其它动作
+- `debug`：`scheduler_run`（调度心跳），仅在 `WP_DEBUG` 开启时入库
+
+日志默认保留 30 天，可用 `opentranslation_log_retention_days` 过滤器调整（1-365）。入库前会对 Bearer token、`sk-` 前缀密钥、`x-api-key` 字段值做打码。
 
 如果要排查连通性问题，优先看：
 
@@ -361,9 +385,7 @@ apply_filters( 'opentranslation_allow_frontend_live_translation', false )
 - `retry`
 - `failed`
 
-如果要排查翻译完整性问题，优先看：
-
-- `placeholder_restored`
+如果要排查翻译完整性问题，筛选 `retry` 与 `failed`，看消息以 `Placeholder validation failed` 开头的记录；这类条目最终会出现在 `Failures` 页。
 
 ## 数据安全与存储说明
 
@@ -376,6 +398,19 @@ apply_filters( 'opentranslation_allow_frontend_live_translation', false )
 - 请求单位窗口统计
 
 其中模型配置通过插件内部的加密选项封装保存，不直接依赖 TranslatePress 的 API Key 字段。
+
+安全相关约定：
+
+- 模型配置以 AES-256-GCM 加密存储，密钥派生自 `wp-config.php` 的 `AUTH_KEY`。**轮换 `AUTH_KEY` 会导致已存配置无法解密**，后台会给出明确提示，需要重新录入模型配置或恢复原 `AUTH_KEY`
+- Base URL 只接受 `https`，并拒绝回环、私有网段、云元数据等内网 / 保留地址
+- 对模型服务的请求禁止跟随重定向
+- 后台不是 HTTPS 时，模型页会提示 API Key 将以明文经网络传输
+
+## 已知技术债
+
+- `class-claude-client.php` 与 `class-openai-client.php` 有约 120 行相似的重试 / 切块逻辑。两者请求体、响应体、错误结构都不同，抽公共基类的耦合可能比重复更差，留待出现第三个 Provider 时再评估。
+- `class-scheduler.php`、`class-translator.php`、`class-claude-client.php`、`class-openai-client.php` 超过 300 行的单文件上限；`class-translator.php` 的 `translate_batch()` 与 `test_connection()` 超过 50 行的单函数上限。这些超限是内聚的，强拆会降低可读性，暂不处理。
+- `Cache::set()` 的写后失效修复在无持久化对象缓存的环境下无法实证，将来上 Redis 后需补验。
 
 ## 卸载说明
 
