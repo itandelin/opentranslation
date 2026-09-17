@@ -100,4 +100,32 @@ class Cache {
         }
         return $counts;
     }
+
+    /**
+     * 按语言 + 状态分组的计数。
+     *
+     * @return array<string,array<string,int>> [lang => ['pending'=>n,'translated'=>n,'failed'=>n]]
+     */
+    public static function get_counts_by_language() {
+        global $wpdb;
+        $table = $wpdb->prefix . 'opentranslation_cache';
+
+        $rows = $wpdb->get_results(
+            "SELECT target_lang, status, COUNT(*) AS total FROM {$table} GROUP BY target_lang, status",
+            ARRAY_A
+        );
+
+        $counts = array();
+        foreach ( (array) $rows as $row ) {
+            $lang = (string) $row['target_lang'];
+
+            if ( ! isset( $counts[ $lang ] ) ) {
+                $counts[ $lang ] = array( 'pending' => 0, 'translated' => 0, 'failed' => 0 );
+            }
+
+            $counts[ $lang ][ (string) $row['status'] ] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
 }

@@ -22,16 +22,21 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
         <div class="notice notice-success"><p><?php esc_html_e( 'Language status updated.', 'opentranslation' ); ?></p></div>
     <?php endif; ?>
 
-    <h2><?php esc_html_e( 'Queue Status', 'opentranslation' ); ?></h2>
+    <h2><?php esc_html_e( 'Cache Overview', 'opentranslation' ); ?></h2>
+    <p class="description"><?php esc_html_e( '以下为 OpenTranslation 缓存表的全局统计（所有语言合计），不等于 TranslatePress 字典表的未翻译量。按语言明细见下方表格。', 'opentranslation' ); ?></p>
     <ul>
-        <li><strong><?php esc_html_e( 'Pending', 'opentranslation' ); ?>:</strong> <?php echo isset( $counts['pending'] ) ? esc_html( $counts['pending'] ) : '0'; ?></li>
-        <li><strong><?php esc_html_e( 'Translated', 'opentranslation' ); ?>:</strong> <?php echo isset( $counts['translated'] ) ? esc_html( $counts['translated'] ) : '0'; ?></li>
-        <li><strong><?php esc_html_e( 'Failed', 'opentranslation' ); ?>:</strong> <?php echo isset( $counts['failed'] ) ? esc_html( $counts['failed'] ) : '0'; ?></li>
+        <li><strong><?php esc_html_e( 'Pending', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $counts['pending'] ?? 0 ); ?></li>
+        <li><strong><?php esc_html_e( 'Translated', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $counts['translated'] ?? 0 ); ?></li>
+        <li><strong><?php esc_html_e( 'Failed', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $counts['failed'] ?? 0 ); ?></li>
         <li><strong><?php esc_html_e( 'Queue Runner', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $next_run ? $runner : __( 'Not scheduled', 'opentranslation' ) ); ?></li>
         <li><strong><?php esc_html_e( 'Next Run', 'opentranslation' ); ?>:</strong>
             <?php
             if ( $next_run ) {
-                echo esc_html( human_time_diff( time(), $next_run ) ) . ' ' . esc_html__( 'from now', 'opentranslation' );
+                printf(
+                    /* translators: %s is a human readable time difference. */
+                    esc_html__( '%s from now', 'opentranslation' ),
+                    esc_html( human_time_diff( time(), $next_run ) )
+                );
             } else {
                 esc_html_e( 'Not scheduled', 'opentranslation' );
             }
@@ -94,17 +99,39 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
     <h2><?php esc_html_e( 'Languages', 'opentranslation' ); ?></h2>
     <table class="wp-list-table widefat fixed striped">
         <thead>
-            <tr><th><?php esc_html_e( 'Language', 'opentranslation' ); ?></th><th><?php esc_html_e( 'Status', 'opentranslation' ); ?></th><th><?php esc_html_e( 'TP Untranslated', 'opentranslation' ); ?></th><th><?php esc_html_e( 'Action', 'opentranslation' ); ?></th></tr>
+            <tr>
+                <th><?php esc_html_e( 'Language', 'opentranslation' ); ?></th>
+                <th><?php esc_html_e( 'Status', 'opentranslation' ); ?></th>
+                <th><?php esc_html_e( 'TP Untranslated', 'opentranslation' ); ?></th>
+                <th><?php esc_html_e( 'Cache Translated', 'opentranslation' ); ?></th>
+                <th><?php esc_html_e( 'Cache Pending', 'opentranslation' ); ?></th>
+                <th><?php esc_html_e( 'Cache Failed', 'opentranslation' ); ?></th>
+                <th><?php esc_html_e( 'Action', 'opentranslation' ); ?></th>
+            </tr>
         </thead>
         <tbody>
             <?php foreach ( $languages as $lang ) : ?>
-                <?php $is_disabled = in_array( $lang, $disabled, true ); ?>
+                <?php
+                $is_disabled = in_array( $lang, $disabled, true );
+                $lang_counts = isset( $counts_by_lang[ $lang ] )
+                    ? $counts_by_lang[ $lang ]
+                    : array( 'pending' => 0, 'translated' => 0, 'failed' => 0 );
+                ?>
                 <tr>
                     <td><?php echo esc_html( $lang ); ?></td>
                     <td><?php echo $is_disabled ? esc_html__( 'Paused', 'opentranslation' ) : esc_html__( 'Active', 'opentranslation' ); ?></td>
                     <td><?php echo esc_html( \OpenTranslation\TP_Storage_Adapter::get_untranslated_count( $lang ) ); ?></td>
+                    <td><?php echo esc_html( $lang_counts['translated'] ); ?></td>
+                    <td><?php echo esc_html( $lang_counts['pending'] ); ?></td>
                     <td>
-                        <a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=opentranslation_toggle_language&lang=' . $lang ), 'opentranslation_toggle_language' ) ); ?>" class="button button-small">
+                        <?php if ( $lang_counts['failed'] > 0 ) : ?>
+                            <strong style="color:#d63638;"><?php echo esc_html( $lang_counts['failed'] ); ?></strong>
+                        <?php else : ?>
+                            0
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=opentranslation_toggle_language&lang=' . urlencode( $lang ) ), 'opentranslation_toggle_language' ) ); ?>" class="button button-small">
                             <?php echo $is_disabled ? esc_html__( 'Resume', 'opentranslation' ) : esc_html__( 'Pause', 'opentranslation' ); ?>
                         </a>
                     </td>

@@ -118,11 +118,12 @@ class Admin {
     }
 
     public function render_queue_page() {
-        $counts = Cache::get_counts();
-        $logs = Log::get_recent( 50 );
-        $languages = TP_Storage_Adapter::get_target_languages();
-        $settings = get_option( 'opentranslation_settings', array() );
-        $disabled = isset( $settings['disabled_languages'] ) ? $settings['disabled_languages'] : array();
+        $counts         = Cache::get_counts();
+        $counts_by_lang = Cache::get_counts_by_language();
+        $languages      = TP_Storage_Adapter::get_target_languages();
+        $settings       = get_option( 'opentranslation_settings', array() );
+        $disabled       = isset( $settings['disabled_languages'] ) ? $settings['disabled_languages'] : array();
+        $logs           = Log::get_recent( 50 );
         require OPENTRANSLATION_PLUGIN_DIR . 'templates/admin-queue.php';
     }
 

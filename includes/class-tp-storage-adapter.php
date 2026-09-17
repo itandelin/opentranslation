@@ -6,6 +6,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class TP_Storage_Adapter {
+    const COUNT_CACHE_GROUP = 'opentranslation_counts';
+
     private static $trp_settings = null;
     private static $trp_query = null;
 
@@ -116,15 +118,46 @@ class TP_Storage_Adapter {
         return ! empty( self::get_ready_untranslated( $language, 1, 0 ) );
     }
 
-    public static function get_untranslated_count( $language ) {
+    /**
+     * 未译条目数（带短期缓存）。
+     *
+     * 字典表当前约 1.4 万行且 translated 列无索引，
+     * 每次打开管理页都全表扫描代价过高。
+     *
+     * @param string $language  目标语言
+     * @param bool   $use_cache 是否读缓存
+     * @return int
+     */
+    public static function get_untranslated_count( $language, $use_cache = true ) {
+        $cache_key = 'untranslated_' . $language;
+
+        if ( $use_cache ) {
+            $cached = wp_cache_get( $cache_key, self::COUNT_CACHE_GROUP );
+            if ( false !== $cached ) {
+                return (int) $cached;
+            }
+        }
+
         global $wpdb;
         $table = self::get_dictionary_table( $language );
-        return (int) $wpdb->get_var(
+        $count = (int) $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT COUNT(*) FROM `{$table}` WHERE ( translated = '' OR translated IS NULL ) AND status != %d",
                 2
             )
         );
+
+        $ttl = (int) apply_filters( 'opentranslation_count_cache_ttl', 5 * MINUTE_IN_SECONDS );
+        wp_cache_set( $cache_key, $count, self::COUNT_CACHE_GROUP, max( 30, $ttl ) );
+
+        return $count;
+    }
+
+    /**
+     * 写回后使计数缓存失效。
+     */
+    public static function flush_count_cache( $language ) {
+        wp_cache_delete( 'untranslated_' . $language, self::COUNT_CACHE_GROUP );
     }
 
     public static function update_translation( $language, $id, $translated_text ) {
@@ -162,6 +195,7 @@ class TP_Storage_Adapter {
         if ( false === $result ) {
             Log::add( '', 'tp_bulk_update_failed', $wpdb->last_error );
         }
+        self::flush_count_cache( $language );
         return false !== $result;
     }
 
