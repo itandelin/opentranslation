@@ -23,7 +23,7 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
             <tr><th><?php esc_html_e( 'Provider', 'opentranslation' ); ?></th><td>
                 <select name="provider">
                     <option value="openai"><?php esc_html_e( 'OpenAI', 'opentranslation' ); ?></option>
-                    <option value="claude"><?php esc_html_e( 'Claude', 'opentranslation' ); ?></option>
+                    <option value="claude"><?php esc_html_e( 'Anthropic', 'opentranslation' ); ?></option>
                 </select>
             </td></tr>
             <tr>
@@ -68,7 +68,7 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
                 <th><?php esc_html_e( 'Max Tokens (0 = auto)', 'opentranslation' ); ?></th>
                 <td>
                     <input type="number" min="0" name="max_tokens" value="0" />
-                    <p class="description"><?php esc_html_e( '单次 API 请求最多返回的 Token 数。0 表示由模型自动决定；Claude 因 API 限制会在填 0 时自动使用 4096。', 'opentranslation' ); ?></p>
+                    <p class="description"><?php esc_html_e( '单次 API 请求最多返回的 Token 数。0 表示由模型自动决定；Anthropic 因 API 限制会在填 0 时自动使用 4096。', 'opentranslation' ); ?></p>
                 </td>
             </tr>
         </table>

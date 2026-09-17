@@ -164,7 +164,7 @@ class Claude_Client implements Model_Client {
 
         $last_request = array(
             'url'      => '',
-            'response' => new \WP_Error( 'claude_request_failed', __( 'Claude request failed before dispatch.', 'opentranslation' ) ),
+            'response' => new \WP_Error( 'claude_request_failed', __( 'Anthropic request failed before dispatch.', 'opentranslation' ) ),
             'raw_body' => '',
             'attempts' => array(),
         );
@@ -270,7 +270,7 @@ class Claude_Client implements Model_Client {
         $data = json_decode( $request['raw_body'], true );
         if ( empty( $data['content'][0]['text'] ) ) {
             // 上游 body 常含请求头片段、账号 ID、key 前缀，仅在 WP_DEBUG 下附加
-            $message = __( 'Claude returned empty content.', 'opentranslation' );
+            $message = __( 'Anthropic returned empty content.', 'opentranslation' );
             if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
                 $message .= ' Debug: ' . $this->limit_preview( $request['raw_body'], 500 );
             }
@@ -325,7 +325,7 @@ class Claude_Client implements Model_Client {
     private function build_http_error( $status_code, $raw_body ) {
         $message = sprintf(
             /* translators: %d is the HTTP status code. */
-            __( 'Claude endpoint returned HTTP %d.', 'opentranslation' ),
+            __( 'Anthropic endpoint returned HTTP %d.', 'opentranslation' ),
             (int) $status_code
         );
 

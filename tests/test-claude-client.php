@@ -39,7 +39,7 @@ $c = ot_claude();
 $r = $c->translate( array( 'a', 'b' ), 'zh_CN' );
 ot_assert_true( is_wp_error( $r ), '401 不重试直接返回错误' );
 ot_assert_same( 'claude_http_error', $r->get_error_code(), '错误码 claude_http_error' );
-ot_assert_same( 'Claude endpoint returned HTTP 401. invalid x-api-key', $r->get_error_message(), '消息含状态码与上游 message' );
+ot_assert_same( 'Anthropic endpoint returned HTTP 401. invalid x-api-key', $r->get_error_message(), '消息含状态码与上游 message' );
 ot_assert_same( 1, count( $GLOBALS['ot_http_log'] ), '401 只发 1 次请求' );
 ot_assert_same( 1, $c->get_last_request_units(), '401 request_units=1' );
 
@@ -99,4 +99,4 @@ ot_http_reset();
 ot_http_enqueue( 401, json_encode( array( 'error' => array( 'message' => 'bad key' ) ) ) );
 $d = ot_claude()->test_connection( array( 'Hello' ), 'zh_CN' );
 ot_assert_same( false, $d['success'], '401 时 success=false' );
-ot_assert_same( 'Claude endpoint returned HTTP 401. bad key', $d['error'], '401 报状态码而非「空响应」' );
+ot_assert_same( 'Anthropic endpoint returned HTTP 401. bad key', $d['error'], '401 报状态码而非「空响应」' );

@@ -2,7 +2,7 @@
 
 OpenTranslation 是一个面向 [TranslatePress](https://translatepress.com/) 的自动翻译适配插件。
 
-它的作用不是自己做页面翻译，而是把 TranslatePress 的自动翻译请求接管下来，转发到你配置的 AI 大模型，再把翻译结果写回 TranslatePress 词库。这样你可以继续使用 TranslatePress 的页面扫描、语言切换和词库体系，同时把实际翻译能力切换成 OpenAI、Claude 或兼容它们接口的第三方模型网关。
+它的作用不是自己做页面翻译，而是把 TranslatePress 的自动翻译请求接管下来，转发到你配置的 AI 大模型，再把翻译结果写回 TranslatePress 词库。这样你可以继续使用 TranslatePress 的页面扫描、语言切换和词库体系，同时把实际翻译能力切换成 OpenAI、Anthropic 或兼容它们接口的第三方模型网关。
 
 ## 插件定位
 
@@ -16,8 +16,8 @@ OpenTranslation 是一个面向 [TranslatePress](https://translatepress.com/) �
 ## 核心特性
 
 - 接入 TranslatePress，自定义自动翻译引擎 `OpenTranslation AI`
-- 支持 `OpenAI` 与 `Claude` 两类 Provider
-- 支持 OpenAI / Claude 兼容网关，自定义 `Base URL`
+- 支持 `OpenAI` 与 `Anthropic` 两类 Provider（即 Chat Completions 与 Messages 两种接口协议）
+- 支持 OpenAI / Anthropic 兼容网关，自定义 `Base URL`
 - 支持多模型优先级与自动降级
 - 支持模型连通性测试与结构化诊断输出
 - 支持缓存、失败重试、重试退避
@@ -110,11 +110,11 @@ OpenTranslation -> Models
 你可以添加一个或多个模型。每个模型包含以下配置：
 
 - `Provider`
-  - `OpenAI`
-  - `Claude`
+  - `OpenAI`：Chat Completions 协议
+  - `Anthropic`：Messages 协议
 - `API Key`
 - `Base URL`
-  - 留空时使用 Provider 官方地址：OpenAI 为 `https://api.openai.com/v1/`，Claude 为 `https://api.anthropic.com/v1/`
+  - 留空时使用 Provider 官方地址：OpenAI 为 `https://api.openai.com/v1/`，Anthropic 为 `https://api.anthropic.com/v1/`
   - 也可以填写兼容网关地址
   - 必须是 `https`，且不接受内网 / 保留地址（回环、私有网段、云元数据地址等）；自建网关如需豁免可用 `opentranslation_allowed_base_url_hosts` 过滤器
 - `Model`
@@ -125,7 +125,7 @@ OpenTranslation -> Models
   - 有效范围 0-2，超出会被夹取到边界
 - `Max Tokens`
   - 填 `0` 表示由模型决定
-  - Claude 因 API 要求 `max_tokens >= 1`，填 0 时插件自动使用 4096
+  - Anthropic 因 API 要求 `max_tokens >= 1`，填 0 时插件自动使用 4096
 
 说明：
 
@@ -249,7 +249,7 @@ OpenTranslation -> Queue & Logs
   - 对兼容网关常见的 `HTTP 524 + empty body`
   - 插件会自动重试
   - 对部分失败场景还会进一步拆小批次再试
-  - OpenAI 与 Claude 两类 Provider 均支持重试与失败切块，重试次数与延迟可用 `opentranslation_openai_max_attempts` / `opentranslation_claude_max_attempts` 等过滤器调整
+  - OpenAI 与 Anthropic 两类 Provider 均支持重试与失败切块，重试次数与延迟可用 `opentranslation_openai_max_attempts` / `opentranslation_claude_max_attempts` 等过滤器调整
 
 - 占位符保护（严格模式）
   - 每个条目使用独立的占位符映射

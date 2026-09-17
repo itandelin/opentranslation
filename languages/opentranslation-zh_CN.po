@@ -48,8 +48,8 @@ msgstr "提供商"
 msgid "OpenAI"
 msgstr "OpenAI"
 
-msgid "Claude"
-msgstr "Claude"
+msgid "Anthropic"
+msgstr "Anthropic"
 
 msgid "API Key"
 msgstr "API 密钥"
@@ -150,8 +150,8 @@ msgstr "每 %d 分钟"
 msgid "OpenAI returned empty content."
 msgstr "OpenAI 返回空内容。"
 
-msgid "Claude returned empty content."
-msgstr "Claude 返回空内容。"
+msgid "Anthropic returned empty content."
+msgstr "Anthropic 返回空内容。"
 
 msgid "Failed to parse model response as JSON array."
 msgstr "无法将模型响应解析为 JSON 数组。"
