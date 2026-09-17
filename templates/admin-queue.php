@@ -142,24 +142,94 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
         </tbody>
     </table>
 
-    <h2><?php esc_html_e( 'Recent Logs', 'opentranslation' ); ?></h2>
+    <h2><?php esc_html_e( 'Logs', 'opentranslation' ); ?></h2>
+
+    <?php
+    $log_total_pages = (int) ceil( $log_total / $log_per_page );
+    $level_colors    = array(
+        'error' => '#d63638',
+        'warn'  => '#dba617',
+        'info'  => '#2271b1',
+        'debug' => '#8c8f94',
+    );
+    ?>
+
+    <form method="get" style="margin-bottom:12px;">
+        <input type="hidden" name="page" value="opentranslation-queue" />
+        <select name="log_action">
+            <option value=""><?php esc_html_e( 'All actions', 'opentranslation' ); ?></option>
+            <?php foreach ( (array) $log_actions as $action_name ) : ?>
+                <option value="<?php echo esc_attr( $action_name ); ?>" <?php selected( $log_action, $action_name ); ?>>
+                    <?php echo esc_html( $action_name ); ?>
+                    (<?php echo esc_html( \OpenTranslation\Log::level_for( $action_name ) ); ?>)
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <?php submit_button( __( 'Filter', 'opentranslation' ), 'secondary', 'submit', false ); ?>
+        <span class="description" style="margin-left:8px;">
+            <?php
+            printf(
+                /* translators: %d is the total number of log rows. */
+                esc_html__( '共 %d 条', 'opentranslation' ),
+                (int) $log_total
+            );
+            ?>
+            <?php if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) : ?>
+                — <?php esc_html_e( 'debug 级日志（如调度心跳）当前不记录，开启 WP_DEBUG 后才会入库。', 'opentranslation' ); ?>
+            <?php endif; ?>
+            — <?php esc_html_e( '日志默认保留 30 天。', 'opentranslation' ); ?>
+        </span>
+    </form>
+
     <table class="wp-list-table widefat fixed striped">
         <thead>
-            <tr><th><?php esc_html_e( 'Time', 'opentranslation' ); ?></th><th><?php esc_html_e( 'Action', 'opentranslation' ); ?></th><th><?php esc_html_e( 'Cache Key', 'opentranslation' ); ?></th><th><?php esc_html_e( 'Message', 'opentranslation' ); ?></th></tr>
+            <tr>
+                <th style="width:14%;"><?php esc_html_e( 'Time', 'opentranslation' ); ?></th>
+                <th style="width:6%;"><?php esc_html_e( 'Level', 'opentranslation' ); ?></th>
+                <th style="width:14%;"><?php esc_html_e( 'Action', 'opentranslation' ); ?></th>
+                <th style="width:20%;"><?php esc_html_e( 'Cache Key', 'opentranslation' ); ?></th>
+                <th><?php esc_html_e( 'Message', 'opentranslation' ); ?></th>
+            </tr>
         </thead>
         <tbody>
             <?php if ( ! empty( $logs ) ) : ?>
                 <?php foreach ( $logs as $log ) : ?>
+                    <?php
+                    $level = \OpenTranslation\Log::level_for( $log['action'] );
+                    $color = isset( $level_colors[ $level ] ) ? $level_colors[ $level ] : '#8c8f94';
+                    ?>
                     <tr>
                         <td><?php echo esc_html( $log['created_at'] ); ?></td>
+                        <td><span style="color:<?php echo esc_attr( $color ); ?>;font-weight:600;"><?php echo esc_html( $level ); ?></span></td>
                         <td><?php echo esc_html( $log['action'] ); ?></td>
-                        <td><code><?php echo esc_html( $log['cache_key'] ); ?></code></td>
+                        <td>
+                            <?php if ( '' !== (string) $log['cache_key'] ) : ?>
+                                <code style="font-size:11px;"><?php echo esc_html( $log['cache_key'] ); ?></code>
+                            <?php endif; ?>
+                        </td>
                         <td><?php echo esc_html( $log['message'] ); ?></td>
                     </tr>
                 <?php endforeach; ?>
             <?php else : ?>
-                <tr><td colspan="4"><?php esc_html_e( 'No logs found.', 'opentranslation' ); ?></td></tr>
+                <tr><td colspan="5"><?php esc_html_e( 'No logs found.', 'opentranslation' ); ?></td></tr>
             <?php endif; ?>
         </tbody>
     </table>
+
+    <?php if ( $log_total_pages > 1 ) : ?>
+        <div class="tablenav bottom">
+            <div class="tablenav-pages">
+                <?php
+                echo wp_kses_post( paginate_links( array(
+                    'base'      => add_query_arg( 'log_page', '%#%' ),
+                    'format'    => '',
+                    'current'   => $log_page,
+                    'total'     => $log_total_pages,
+                    'prev_text' => '&laquo;',
+                    'next_text' => '&raquo;',
+                ) ) );
+                ?>
+            </div>
+        </div>
+    <?php endif; ?>
 </div>
