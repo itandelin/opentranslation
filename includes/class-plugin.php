@@ -32,6 +32,7 @@ class Plugin {
             new Admin_Ajax();
             new Admin_Actions();
             new Admin_Usage();
+            new Admin_Glossary();
         }
 
         Activator::maybe_upgrade();

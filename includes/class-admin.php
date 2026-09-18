@@ -54,6 +54,8 @@ class Admin {
                 'test_failed'  => __( '连接失败', 'opentranslation' ),
                 'edit_model'   => __( 'Edit Model', 'opentranslation' ),
                 'add_model'    => __( 'Add Model', 'opentranslation' ),
+                'edit_term'    => __( 'Edit Term', 'opentranslation' ),
+                'add_term'     => __( 'Add Term', 'opentranslation' ),
                 'insecure_transport' => __( '当前后台不是 HTTPS，API Key 将以明文经网络传输。建议为后台启用 HTTPS。', 'opentranslation' ),
             ),
             'test_nonce' => wp_create_nonce( 'opentranslation_test_model_nonce' ),

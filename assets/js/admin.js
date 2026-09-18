@@ -119,6 +119,37 @@
             $('#ot-api-key-hint').hide();
         });
 
+        // 术语编辑：把行数据回填到表单
+        $('.ot-edit-term-btn').on('click', function () {
+            var $btn = $(this);
+
+            $('#ot-term-index').val($btn.data('index'));
+            $('#ot-term-source').val($btn.data('source'));
+            $('#ot-term-target').val($btn.data('target'));
+            $('#ot-term-language').val($btn.data('language'));
+            $('#ot-term-note').val($btn.data('note'));
+            $('#ot-term-case').prop('checked', '1' === String($btn.data('case-sensitive')));
+            $('#ot-term-whole').prop('checked', '1' === String($btn.data('whole-word')));
+
+            $('#ot-term-form-title').text(opentranslation_ajax.strings.edit_term);
+            // 隐藏并禁用「Add」：display:none 的提交按钮仍是表单默认按钮，
+            // 不禁用的话在输入框按回车会以新增模式提交，产生重复术语
+            $('#ot-submit-term-add').hide().prop('disabled', true);
+            $('#ot-submit-term-update').show();
+            $('#ot-cancel-term').show();
+
+            $('html, body').animate({ scrollTop: $('#ot-term-form').offset().top - 40 }, 200);
+        });
+
+        $('#ot-cancel-term').on('click', function () {
+            $('#ot-term-form')[0].reset();
+            $('#ot-term-index').val('');
+            $('#ot-term-form-title').text(opentranslation_ajax.strings.add_term);
+            $('#ot-submit-term-add').show().prop('disabled', false);
+            $('#ot-submit-term-update').hide();
+            $('#ot-cancel-term').hide();
+        });
+
         // 非 HTTPS 后台提示（S8）
         if (window.location.protocol !== 'https:') {
             $('#ot-api-key').after(
