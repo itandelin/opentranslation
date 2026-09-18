@@ -13,6 +13,7 @@ class OpenAI_Client implements Model_Client {
     private $max_tokens;
     private $timeout = 60;
     private $last_request_units = 0;
+    private $last_usage = array( 'prompt_tokens' => 0, 'completion_tokens' => 0, 'total_tokens' => 0 );
     public function __construct( $config ) {
         $this->api_key = $config['api_key'];
         $base_url      = isset( $config['base_url'] ) ? trim( (string) $config['base_url'] ) : '';
@@ -26,6 +27,7 @@ class OpenAI_Client implements Model_Client {
     }
     public function translate( $items, $target_lang, $system_prompt = '' ) {
         $this->last_request_units = 0;
+        $this->last_usage = array( 'prompt_tokens' => 0, 'completion_tokens' => 0, 'total_tokens' => 0 );
         return $this->translate_resilient( $items, $target_lang, $system_prompt );
     }
     public function test_connection( $items, $target_lang, $system_prompt = '' ) {
@@ -70,6 +72,21 @@ class OpenAI_Client implements Model_Client {
     }
     public function get_last_request_units() {
         return max( 0, (int) $this->last_request_units );
+    }
+    public function get_last_usage() {
+        return $this->last_usage;
+    }
+    /**
+     * 累加一次成功响应的 usage。缺字段按 0；缺 total 用 p + c 补。
+     */
+    private function add_usage( $data ) {
+        $u = isset( $data['usage'] ) && is_array( $data['usage'] ) ? $data['usage'] : array();
+        $p = isset( $u['prompt_tokens'] ) ? (int) $u['prompt_tokens'] : 0;
+        $c = isset( $u['completion_tokens'] ) ? (int) $u['completion_tokens'] : 0;
+        $t = isset( $u['total_tokens'] ) ? (int) $u['total_tokens'] : $p + $c;
+        $this->last_usage['prompt_tokens']     += $p;
+        $this->last_usage['completion_tokens'] += $c;
+        $this->last_usage['total_tokens']      += $t;
     }
     private function build_prompt( $items, $target_lang ) {
         $lines = array();
@@ -243,6 +260,7 @@ class OpenAI_Client implements Model_Client {
             return $this->maybe_split_request( $items, $target_lang, $system_prompt, $this->build_http_error( $status_code, $raw_body ), $depth );
         }
         $data = json_decode( $raw_body, true );
+        $this->add_usage( $data );
         $content = $this->extract_message_content( $data );
         if ( '' === $content ) {
             // 上游 body 常含请求头片段、账号 ID、key 前缀，

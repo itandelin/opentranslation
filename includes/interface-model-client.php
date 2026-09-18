@@ -23,4 +23,18 @@ interface Model_Client {
      * @return array
      */
     public function test_connection( $items, $target_lang, $system_prompt = '' );
+
+    /**
+     * 上一次 translate() 期间的 HTTP 尝试次数（含重试与切块）。
+     *
+     * @return int
+     */
+    public function get_last_request_units();
+
+    /**
+     * 上一次 translate() 期间累计的 token 用量，已归一化。
+     *
+     * @return array{prompt_tokens:int,completion_tokens:int,total_tokens:int}
+     */
+    public function get_last_usage();
 }

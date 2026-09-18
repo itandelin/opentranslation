@@ -21,6 +21,7 @@ class Claude_Client implements Model_Client {
     private $max_tokens;
     private $timeout = 60;
     private $last_request_units = 0;
+    private $last_usage = array( 'prompt_tokens' => 0, 'completion_tokens' => 0, 'total_tokens' => 0 );
 
     public function __construct( $config ) {
         $this->api_key = $config['api_key'];
@@ -37,11 +38,29 @@ class Claude_Client implements Model_Client {
 
     public function translate( $items, $target_lang, $system_prompt = '' ) {
         $this->last_request_units = 0;
+        $this->last_usage = array( 'prompt_tokens' => 0, 'completion_tokens' => 0, 'total_tokens' => 0 );
         return $this->translate_resilient( $items, $target_lang, $system_prompt );
     }
 
     public function get_last_request_units() {
         return max( 0, (int) $this->last_request_units );
+    }
+
+    public function get_last_usage() {
+        return $this->last_usage;
+    }
+
+    /**
+     * 累加一次成功响应的 usage。Messages API 的字段是 input_tokens / output_tokens，
+     * 归一化为 prompt / completion 与 OpenAI 对齐。
+     */
+    private function add_usage( $data ) {
+        $u = isset( $data['usage'] ) && is_array( $data['usage'] ) ? $data['usage'] : array();
+        $p = isset( $u['input_tokens'] ) ? (int) $u['input_tokens'] : 0;
+        $c = isset( $u['output_tokens'] ) ? (int) $u['output_tokens'] : 0;
+        $this->last_usage['prompt_tokens']     += $p;
+        $this->last_usage['completion_tokens'] += $c;
+        $this->last_usage['total_tokens']      += $p + $c;
     }
 
     public function test_connection( $items, $target_lang, $system_prompt = '' ) {
@@ -230,7 +249,8 @@ class Claude_Client implements Model_Client {
             return $this->maybe_split_request( $items, $target_lang, $system_prompt, $error, $depth );
         }
 
-        $data   = json_decode( $request['raw_body'], true );
+        $data = json_decode( $request['raw_body'], true );
+        $this->add_usage( $data );
         $parsed = $this->parse_response( $data['content'][0]['text'] );
 
         if ( is_wp_error( $parsed ) ) {
