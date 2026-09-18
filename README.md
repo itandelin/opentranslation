@@ -154,6 +154,12 @@ OpenTranslation -> Settings
   - 模型翻译提示词
 - `Plugin Language`
   - 插件后台界面语言
+- `Translation Scope`
+  - 按内容归属选择翻译范围，每个目标语言一组（全部 / 仅包含 / 排除）
+  - 归属桶来自 TranslatePress 在**页面渲染时**记录的文章关联（`original_id → trp_original_meta.post_parent_id → wp_posts.post_type`）
+  - `未关联文章` 表示 TP 尚未记录归属的字符串（菜单、页脚、主题文案等，也包括尚未被访问过的页面内容）
+  - `仅已发布` 只对已关联文章的条目生效，排除模式下不可用
+  - 注意：归属是惰性记录的，未访问过的页面内容可能尚未关联；`mode=all` 的行为与未配置时完全一致
 
 ### 3. 在 TranslatePress 中选择引擎
 
