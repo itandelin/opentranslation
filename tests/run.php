@@ -12,6 +12,7 @@ require_once __DIR__ . '/../includes/class-protector.php';
 require_once __DIR__ . '/../includes/class-translator.php';
 require_once __DIR__ . '/../includes/class-model-identity.php';
 require_once __DIR__ . '/../includes/class-model-health.php';
+require_once __DIR__ . '/../includes/class-scope.php';
 require_once __DIR__ . '/../includes/class-url-guard.php';
 require_once __DIR__ . '/../includes/class-log.php';
 require_once __DIR__ . '/../includes/interface-model-client.php';
