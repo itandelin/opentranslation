@@ -102,6 +102,15 @@ class Admin {
         $plugin_language = isset( $input['plugin_language'] ) ? sanitize_text_field( $input['plugin_language'] ) : 'zh_CN';
         $output['plugin_language'] = in_array( $plugin_language, $allowed_languages, true ) ? $plugin_language : 'zh_CN';
 
+        // 翻译范围：委托 Scope::sanitize_settings 规范化 + 告警
+        $languages = TP_Storage_Adapter::get_target_languages();
+        // Settings 表单含 scope 字段则用表单值，否则保留原值（与 model_pricing 同类陷阱）
+        $raw_scope = isset( $input['scope'] ) && is_array( $input['scope'] ) ? $input['scope'] : array();
+        if ( empty( $raw_scope ) && isset( $existing['scope'] ) && is_array( $existing['scope'] ) ) {
+            $raw_scope = $existing['scope'];
+        }
+        $output['scope'] = Scope::sanitize_settings( $raw_scope, $languages );
+
         return $output;
     }
 
@@ -111,6 +120,8 @@ class Admin {
 
     public function render_settings_page() {
         $settings = get_option( 'opentranslation_settings', array() );
+        $languages = TP_Storage_Adapter::get_target_languages();
+        $scope = isset( $settings['scope'] ) && is_array( $settings['scope'] ) ? $settings['scope'] : array();
         require OPENTRANSLATION_PLUGIN_DIR . 'templates/admin-settings.php';
     }
 

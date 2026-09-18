@@ -48,6 +48,78 @@ $plugin_language = $settings['plugin_language'] ?? 'zh_CN';
                 </td>
             </tr>
         </table>
+
+        <h2><?php esc_html_e( 'Translation Scope', 'opentranslation' ); ?></h2>
+        <p class="description"><?php esc_html_e( '按内容归属选择翻译范围。归属来自 TranslatePress 在页面渲染时记录的文章关联；『未关联文章』表示 TP 尚未记录归属的字符串（菜单、页脚、主题文案等，也包括尚未被访问过的页面内容）。『仅已发布』只对已关联文章的条目生效。', 'opentranslation' ); ?></p>
+
+        <?php if ( empty( $languages ) ) : ?>
+            <p><?php esc_html_e( 'No target languages configured in TranslatePress.', 'opentranslation' ); ?></p>
+        <?php else : ?>
+            <?php foreach ( $languages as $ot_lang ) : ?>
+                <?php
+                $ot_cfg   = isset( $scope[ $ot_lang ] ) ? $scope[ $ot_lang ] : array( 'mode' => 'all', 'buckets' => array(), 'published_only' => false );
+                $ot_dist  = \OpenTranslation\Scope::distribution( $ot_lang );
+                $ot_field = 'opentranslation_settings[scope][' . $ot_lang . ']';
+                ?>
+                <h3><?php echo esc_html( $ot_lang ); ?></h3>
+                <table class="form-table">
+                    <tr>
+                        <th><?php esc_html_e( 'Mode', 'opentranslation' ); ?></th>
+                        <td>
+                            <label><input type="radio" name="<?php echo esc_attr( $ot_field ); ?>[mode]" value="all" <?php checked( $ot_cfg['mode'], 'all' ); ?> /> <?php esc_html_e( '全部', 'opentranslation' ); ?></label>
+                            <label style="margin-left:12px;"><input type="radio" name="<?php echo esc_attr( $ot_field ); ?>[mode]" value="include" <?php checked( $ot_cfg['mode'], 'include' ); ?> /> <?php esc_html_e( '仅包含', 'opentranslation' ); ?></label>
+                            <label style="margin-left:12px;"><input type="radio" name="<?php echo esc_attr( $ot_field ); ?>[mode]" value="exclude" <?php checked( $ot_cfg['mode'], 'exclude' ); ?> /> <?php esc_html_e( '排除', 'opentranslation' ); ?></label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Buckets', 'opentranslation' ); ?></th>
+                        <td>
+                            <?php
+                            if ( empty( $ot_dist ) ) :
+                                echo '<p class="description">' . esc_html__( '暂无归属数据。', 'opentranslation' ) . '</p>';
+                            else :
+                                foreach ( $ot_dist as $ot_bucket => $ot_stats ) :
+                                    $ot_label = \OpenTranslation\Scope::UNLINKED === $ot_bucket
+                                        ? __( '未关联文章', 'opentranslation' )
+                                        : $ot_bucket;
+                                    ?>
+                                    <label style="display:block;margin-bottom:4px;">
+                                        <input type="checkbox"
+                                            name="<?php echo esc_attr( $ot_field ); ?>[buckets][]"
+                                            value="<?php echo esc_attr( $ot_bucket ); ?>"
+                                            <?php checked( in_array( $ot_bucket, $ot_cfg['buckets'], true ) ); ?> />
+                                        <?php echo esc_html( $ot_label ); ?>
+                                        <span class="description">
+                                            (<?php
+                                            printf(
+                                                /* translators: 1: total count, 2: untranslated count. */
+                                                esc_html__( '总 %1$d / 未译 %2$d', 'opentranslation' ),
+                                                (int) $ot_stats['total'],
+                                                (int) $ot_stats['untranslated']
+                                            );
+                                            ?>)
+                                        </span>
+                                    </label>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th><?php esc_html_e( 'Published only', 'opentranslation' ); ?></th>
+                        <td>
+                            <label>
+                                <input type="checkbox"
+                                    name="<?php echo esc_attr( $ot_field ); ?>[published_only]"
+                                    value="1"
+                                    <?php checked( ! empty( $ot_cfg['published_only'] ) ); ?>
+                                    <?php disabled( 'exclude' === $ot_cfg['mode'] ); ?> />
+                                <?php esc_html_e( '仅翻译已发布文章关联的内容（排除模式不支持）', 'opentranslation' ); ?>
+                            </label>
+                        </td>
+                    </tr>
+                </table>
+            <?php endforeach; ?>
+        <?php endif; ?>
         <?php submit_button(); ?>
     </form>
 </div>

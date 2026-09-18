@@ -177,6 +177,40 @@ class Scope {
     }
 
     /**
+     * sanitize_settings 委托：规范化 + 逐条告警（含范围内无条目）。
+     *
+     * @param array $input     表单提交的 scope 数组
+     * @param array $languages 目标语言白名单
+     * @return array 规范化后的 scope 配置
+     */
+    public static function sanitize_settings( array $input, array $languages ) {
+        $warnings = array();
+        $output   = self::sanitize( $input, $languages, $warnings );
+
+        foreach ( $warnings as $warning_text ) {
+            add_settings_error( 'opentranslation_settings', 'scope_warn', $warning_text, 'warning' );
+        }
+
+        foreach ( $languages as $language ) {
+            $cfg = $output[ $language ];
+            if ( 'all' !== $cfg['mode'] && 0 === self::ready_count( $language ) ) {
+                add_settings_error(
+                    'opentranslation_settings',
+                    'scope_empty_' . $language,
+                    sprintf(
+                        /* translators: %s is a language code. */
+                        __( '%s：当前翻译范围下没有可翻译条目。', 'opentranslation' ),
+                        $language
+                    ),
+                    'warning'
+                );
+            }
+        }
+
+        return $output;
+    }
+
+    /**
      * 规范化单语言配置。
      *
      * @param array $config
