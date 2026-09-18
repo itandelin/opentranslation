@@ -89,6 +89,11 @@ class Scheduler {
      * @return bool
      */
     private function run_rounds( $languages, &$totals, $started_at ) {
+        // 所有模型都在熔断中：直接跳过本轮，不查字典表、不标记任何条目失败。
+        if ( $this->should_skip_for_circuit( $totals ) ) {
+            return false;
+        }
+
         $settings = get_option( 'opentranslation_settings', array() );
         $batch_size = isset( $settings['batch_size'] ) ? absint( $settings['batch_size'] ) : 10;
         $batch_size = max( 1, min( 50, $batch_size ) );
@@ -118,6 +123,23 @@ class Scheduler {
             }
         }
         return $should_continue;
+    }
+
+    /**
+     * 所有模型都在熔断中时跳过本轮。
+     *
+     * @param array $totals 统计累加目标（引用），命中时置 circuit_open
+     * @return bool 是否应跳过
+     */
+    private function should_skip_for_circuit( &$totals ) {
+        $models = Encrypted_Options::get( 'opentranslation_models', array() );
+        if ( empty( $models ) || ! ( new Model_Health() )->all_open( $models ) ) {
+            return false;
+        }
+
+        Log::add( '', 'model_circuit_open', __( 'All models circuit-open; round skipped.', 'opentranslation' ) );
+        $totals['circuit_open'] = true;
+        return true;
     }
 
     /**
