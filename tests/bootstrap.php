@@ -37,6 +37,25 @@ if ( ! function_exists( 'sanitize_text_field' ) ) {
     }
 }
 
+// 内存版 option：测试里直接读写 $GLOBALS['ot_test_options']
+if ( ! function_exists( 'get_option' ) ) {
+    $GLOBALS['ot_test_options'] = array();
+
+    function get_option( $name, $default = false ) {
+        return array_key_exists( $name, $GLOBALS['ot_test_options'] )
+            ? $GLOBALS['ot_test_options'][ $name ]
+            : $default;
+    }
+    function update_option( $name, $value, $autoload = null ) {
+        $GLOBALS['ot_test_options'][ $name ] = $value;
+        return true;
+    }
+    function delete_option( $name ) {
+        unset( $GLOBALS['ot_test_options'][ $name ] );
+        return true;
+    }
+}
+
 if ( ! function_exists( 'trailingslashit' ) ) {
     function trailingslashit( $string ) {
         return rtrim( $string, '/\\' ) . '/';

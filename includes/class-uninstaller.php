@@ -39,6 +39,7 @@ class Uninstaller {
             'opentranslation_last_run_stats',
             'opentranslation_tp_cache_cleared_at',
             'opentranslation_glossary',
+            'opentranslation_model_health',
         );
     }
 
