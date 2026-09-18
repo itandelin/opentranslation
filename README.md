@@ -227,6 +227,10 @@ OpenTranslation -> Queue & Logs
 - 各语言的 TP 未翻译数与缓存表的按语言计数，失败数可点击跳转到 `Failures` 页
 - 日志：按动作筛选、分级着色、分页
 
+### Usage
+
+用量看板。按 UTC 日期与模型聚合每次模型调用的请求次数与 token 消耗（prompt / completion / total），展示最近 30 天明细、按模型汇总与本月累计。可为每个模型填写每千 token 单价，页面据此估算费用。估算值仅供参考，实际以服务商账单为准。若某模型的响应不含 usage 字段，页面会标注「该模型未返回用量数据」而非显示 0 成本。
+
 ### Failures
 
 失败条目详情页。列出已达到最大重试次数的条目，显示原文、语言、重试次数、最后一条日志消息，支持按语言筛选与单条 `Retry`。单条重试会把该条目重置为待翻译，在下次队列执行时再试一次。
@@ -396,6 +400,7 @@ apply_filters( 'opentranslation_allow_frontend_live_translation', false )
 - 失败状态
 - 运行日志
 - 请求单位窗口统计
+- 按日与模型聚合的用量统计（`wp_opentranslation_usage`）
 
 其中模型配置通过插件内部的加密选项封装保存，不直接依赖 TranslatePress 的 API Key 字段。
 
@@ -421,6 +426,7 @@ apply_filters( 'opentranslation_allow_frontend_live_translation', false )
 - 缓存表
 - 日志表
 - 请求单位表
+- 用量表
 
 如果你希望保留历史翻译缓存或日志，请在卸载前自行备份数据库。
 
