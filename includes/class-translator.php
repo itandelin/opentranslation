@@ -93,7 +93,9 @@ class Translator {
                     continue;
                 }
                 $response = $client->translate( $texts, $language, trim( $system_prompt ) );
-                $request_units += method_exists( $client, 'get_last_request_units' ) ? max( 1, (int) $client->get_last_request_units() ) : 1;
+                $units = max( 1, (int) $client->get_last_request_units() );
+                $request_units += $units;
+                Usage::record( Model_Identity::key( $model_config ), Model_Identity::label( $model_config ), $client->get_last_usage(), $units );
                 if ( ! is_wp_error( $response ) ) {
                     $used_model = $model_config['model'];
                     break;
