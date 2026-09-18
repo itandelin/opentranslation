@@ -93,7 +93,7 @@ class Config_Transfer {
      * @param array $data            json_decode 后的顶层数组
      * @param array $existing_models 目标站现有模型（含明文 api_key），用于按 identity 沿用密钥
      * @param array $languages       目标站的 TP 目标语言列表，用于规范化 scope
-     * @return array{ok:bool,reason:string,normalized:array,summary:array,skipped:array}
+     * @return array{ok:bool,reason:string,normalized:array,summary:array,skipped:array,key_sources:array}
      */
     public static function validate( $data, array $existing_models = array(), array $languages = array() ) {
         $rejection = self::check_format( $data );
@@ -101,14 +101,16 @@ class Config_Transfer {
             return $rejection;
         }
 
-        $skipped  = array();
-        $has_keys = ! empty( $data['includes_api_keys'] );
+        $skipped     = array();
+        $key_sources = array();
+        $has_keys    = ! empty( $data['includes_api_keys'] );
 
         $models = self::normalize_models(
             isset( $data['models'] ) && is_array( $data['models'] ) ? $data['models'] : array(),
             $existing_models,
             $has_keys,
-            $skipped
+            $skipped,
+            $key_sources
         );
 
         $glossary = self::normalize_glossary(
@@ -122,15 +124,18 @@ class Config_Transfer {
         );
 
         return array(
-            'ok'         => true,
-            'reason'     => '',
-            'normalized' => array(
+            'ok'          => true,
+            'reason'      => '',
+            'normalized'  => array(
                 'settings' => $settings,
                 'models'   => $models,
                 'glossary' => $glossary,
             ),
-            'summary'    => self::build_summary( $data, $models, $glossary, $settings, $skipped, $has_keys ),
-            'skipped'    => $skipped,
+            'summary'     => self::build_summary( $data, $models, $glossary, $settings, $skipped, $has_keys ),
+            'skipped'     => $skipped,
+            // 与 normalized['models'] 同序。刻意放在 normalized 之外：
+            // apply() 只写 normalized，这个纯展示字段不该落库。
+            'key_sources' => $key_sources,
         );
     }
 
@@ -215,7 +220,7 @@ class Config_Transfer {
      * 模型规范化：base_url 被 URL_Guard 拒绝的整条跳过；
      * 不含密钥时按 Model_Identity::key() 匹配目标站已有模型沿用密钥。
      */
-    private static function normalize_models( array $rows, array $existing_models, $has_keys, array &$skipped ) {
+    private static function normalize_models( array $rows, array $existing_models, $has_keys, array &$skipped, array &$key_sources ) {
         $existing_by_key = array();
         foreach ( $existing_models as $config ) {
             if ( is_array( $config ) ) {
@@ -251,8 +256,10 @@ class Config_Transfer {
                 'max_tokens'  => isset( $row['max_tokens'] ) ? absint( $row['max_tokens'] ) : 0,
             );
 
-            $config['api_key'] = self::resolve_api_key( $row, $config, $existing_by_key, $has_keys );
-            $out[] = $config;
+            $resolved          = self::resolve_api_key( $row, $config, $existing_by_key, $has_keys );
+            $config['api_key'] = $resolved[0];
+            $key_sources[]     = $resolved[1];
+            $out[]             = $config;
         }
 
         return $out;
@@ -261,17 +268,26 @@ class Config_Transfer {
     /**
      * 密钥来源：文件带密钥则用文件的；否则按 identity 沿用目标站现有密钥；都没有则留空。
      */
+    /**
+     * 密钥来源：文件带密钥则用文件的；否则按 identity 沿用目标站现有密钥；都没有则留空。
+     *
+     * 连来源一起返回而不只返回值：预览页要如实区分「文件提供」与「沿用本站」，
+     * 只靠 includes_api_keys 反推会把「文件声明含密钥、但该条为空、实际沿用了本站」
+     * 误标成「文件提供」。
+     *
+     * @return array array( api_key, from_file|reused|missing )
+     */
     private static function resolve_api_key( array $row, array $config, array $existing_by_key, $has_keys ) {
         if ( $has_keys && isset( $row['api_key'] ) && '' !== trim( (string) $row['api_key'] ) ) {
-            return trim( (string) $row['api_key'] );
+            return array( trim( (string) $row['api_key'] ), 'from_file' );
         }
 
         $key = Model_Identity::key( $config );
-        if ( isset( $existing_by_key[ $key ]['api_key'] ) ) {
-            return (string) $existing_by_key[ $key ]['api_key'];
+        if ( isset( $existing_by_key[ $key ]['api_key'] ) && '' !== (string) $existing_by_key[ $key ]['api_key'] ) {
+            return array( (string) $existing_by_key[ $key ]['api_key'], 'reused' );
         }
 
-        return '';
+        return array( '', 'missing' );
     }
 
     /**

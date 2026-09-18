@@ -188,3 +188,53 @@ $summary = Config_Transfer::validate(
 ot_assert_same( 1, $summary['summary']['models'], '摘要模型数' );
 ot_assert_same( 1, $summary['summary']['glossary'], '摘要术语数' );
 ot_assert_same( false, $summary['summary']['includes_api_keys'], '摘要记录是否含密钥' );
+
+ot_test_group( 'Config_Transfer：如实记录每条模型的密钥来源' );
+
+$src_reused = Config_Transfer::validate( ot_transfer_payload(), $existing, array( 'zh_CN' ) );
+ot_assert_same( array( 'reused' ), $src_reused['key_sources'], '沿用本站密钥记为 reused' );
+
+$src_missing = Config_Transfer::validate(
+    ot_transfer_payload( array( 'models' => array( ot_transfer_model( array( 'model' => 'other-model' ) ) ) ) ),
+    $existing,
+    array( 'zh_CN' )
+);
+ot_assert_same( array( 'missing' ), $src_missing['key_sources'], '无匹配记为 missing' );
+
+$src_file = Config_Transfer::validate(
+    ot_transfer_payload( array(
+        'includes_api_keys' => true,
+        'models'            => array( ot_transfer_model( array( 'api_key' => 'sk-from-file' ) ) ),
+    ) ),
+    array(),
+    array( 'zh_CN' )
+);
+ot_assert_same( array( 'from_file' ), $src_file['key_sources'], '文件提供记为 from_file' );
+
+// 边界：文件声明含密钥，但该条为空，实际沿用了本站密钥。
+// 只靠 includes_api_keys 反推会误标成 from_file。
+$src_edge = Config_Transfer::validate(
+    ot_transfer_payload( array(
+        'includes_api_keys' => true,
+        'models'            => array( ot_transfer_model( array( 'api_key' => '' ) ) ),
+    ) ),
+    $existing,
+    array( 'zh_CN' )
+);
+ot_assert_same( 'sk-existing-key-value', $src_edge['normalized']['models'][0]['api_key'], '该条实际沿用本站密钥' );
+ot_assert_same( array( 'reused' ), $src_edge['key_sources'], '声明含密钥但该条为空时记为 reused 而非 from_file' );
+
+ot_test_group( 'Config_Transfer：key_sources 与 models 同序' );
+
+$src_aligned = Config_Transfer::validate(
+    ot_transfer_payload( array( 'models' => array(
+        ot_transfer_model( array( 'base_url' => 'http://127.0.0.1/v1/', 'model' => 'evil' ) ),
+        ot_transfer_model(),
+    ) ) ),
+    $existing,
+    array( 'zh_CN' )
+);
+ot_assert_same( 1, count( $src_aligned['key_sources'] ), '被跳过的模型不占 key_sources 位置' );
+ot_assert_same( array( 'reused' ), $src_aligned['key_sources'], '跳过后仍与保留的模型对齐' );
+
+ot_assert_same( array(), Config_Transfer::validate( array(), array(), array( 'zh_CN' ) )['skipped'], '拒绝时 skipped 为空数组' );

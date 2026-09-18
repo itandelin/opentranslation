@@ -22,6 +22,14 @@ class Uninstaller {
     const OPTION_PREFIX = 'opentranslation_';
 
     /**
+     * 导入预览 transient 的名前缀（不含 _transient_）。
+     *
+     * 与 options() 同理用字面量，不引用 Admin_Transfer::TRANSIENT_PREFIX：
+     * 卸载时该类可能尚未加载。
+     */
+    const IMPORT_TRANSIENT_PREFIX = 'opentranslation_import_';
+
+    /**
      * 已知 option 清单。
      *
      * 用字面量而非引用 Encrypted_Options::DECRYPT_FAILED_FLAG 等常量：
@@ -108,6 +116,30 @@ class Uninstaller {
 
         foreach ( (array) $leftovers as $option_name ) {
             delete_option( $option_name );
+        }
+
+        self::delete_import_transients();
+    }
+
+    /**
+     * 清理导入预览的 transient。
+     *
+     * 上面的前缀扫描匹配不到这些行：它们以 _transient_ 开头。
+     * 用 delete_transient() 而非 delete_option()，一次连带清掉
+     * _transient_timeout_ 行与对象缓存里的副本。
+     */
+    private static function delete_import_transients() {
+        global $wpdb;
+
+        $names = $wpdb->get_col(
+            $wpdb->prepare(
+                "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s",
+                $wpdb->esc_like( '_transient_' . self::IMPORT_TRANSIENT_PREFIX ) . '%'
+            )
+        );
+
+        foreach ( (array) $names as $option_name ) {
+            delete_transient( substr( $option_name, strlen( '_transient_' ) ) );
         }
     }
 }

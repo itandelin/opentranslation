@@ -33,6 +33,7 @@ class Plugin {
             new Admin_Actions();
             new Admin_Usage();
             new Admin_Glossary();
+            new Admin_Transfer();
         }
 
         Activator::maybe_upgrade();

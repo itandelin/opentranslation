@@ -15,6 +15,7 @@ require_once __DIR__ . '/../includes/class-model-health.php';
 require_once __DIR__ . '/../includes/class-scope.php';
 require_once __DIR__ . '/../includes/class-admin.php';
 require_once __DIR__ . '/../includes/class-config-transfer.php';
+require_once __DIR__ . '/../includes/class-admin-transfer.php';
 require_once __DIR__ . '/../includes/class-url-guard.php';
 require_once __DIR__ . '/../includes/class-log.php';
 require_once __DIR__ . '/../includes/interface-model-client.php';
