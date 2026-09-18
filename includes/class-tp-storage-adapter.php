@@ -78,9 +78,10 @@ class TP_Storage_Adapter {
 
     public static function get_ready_untranslated( $language, $limit = 10, $offset = 0 ) {
         global $wpdb;
-        $table = self::get_dictionary_table( $language );
+        $table      = self::get_dictionary_table( $language );
         $cache_table = $wpdb->prefix . 'opentranslation_cache';
-        $now = gmdate( 'Y-m-d H:i:s' );
+        $now        = gmdate( 'Y-m-d H:i:s' );
+        $scope      = Scope::sql_where( $language );
         $sql = $wpdb->prepare(
             "SELECT d.id, d.original, d.translated, d.status, c.translated_text AS cached_translation
             FROM `{$table}` d
@@ -88,6 +89,7 @@ class TP_Storage_Adapter {
                 ON c.cache_key = MD5( CONCAT( d.original, '|', %s, '|' ) )
             WHERE ( d.translated = '' OR d.translated IS NULL )
                 AND d.status != 2
+                {$scope}
                 AND (
                     c.id IS NULL
                     OR ( c.translated_text IS NOT NULL AND c.translated_text != '' )
@@ -118,7 +120,7 @@ class TP_Storage_Adapter {
      * @return int
      */
     public static function get_untranslated_count( $language, $use_cache = true ) {
-        $cache_key = 'untranslated_' . $language;
+        $cache_key = 'untranslated_' . $language . '_' . md5( wp_json_encode( Scope::get( $language ) ) );
 
         if ( $use_cache ) {
             $cached = wp_cache_get( $cache_key, self::COUNT_CACHE_GROUP );
@@ -129,9 +131,10 @@ class TP_Storage_Adapter {
 
         global $wpdb;
         $table = self::get_dictionary_table( $language );
+        $scope = Scope::sql_where( $language );
         $count = (int) $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT COUNT(*) FROM `{$table}` WHERE ( translated = '' OR translated IS NULL ) AND status != %d",
+                "SELECT COUNT(*) FROM `{$table}` d WHERE ( d.translated = '' OR d.translated IS NULL ) AND d.status != %d {$scope}",
                 2
             )
         );
@@ -143,10 +146,10 @@ class TP_Storage_Adapter {
     }
 
     /**
-     * 写回后使计数缓存失效。
+     * 写回后使计数缓存失效（按语言删除当前范围 key）。
      */
     public static function flush_count_cache( $language ) {
-        wp_cache_delete( 'untranslated_' . $language, self::COUNT_CACHE_GROUP );
+        wp_cache_delete( 'untranslated_' . $language . '_' . md5( wp_json_encode( Scope::get( $language ) ) ), self::COUNT_CACHE_GROUP );
     }
 
     public static function update_translation( $language, $id, $translated_text ) {

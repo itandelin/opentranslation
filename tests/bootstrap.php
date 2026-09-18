@@ -56,18 +56,19 @@ if ( ! function_exists( 'get_option' ) ) {
     }
 }
 
-// 极简 $wpdb stub：Scope::sql_where 需要 prefix 与 esc_sql
+// 极简 $wpdb stub：Scope::sql_where 需要 prefix；esc_sql 用全局函数
 if ( ! class_exists( 'OT_Test_WPDB' ) ) {
     class OT_Test_WPDB {
         public $prefix = 'wp_';
-
-        public function esc_sql( $value ) {
-            return addslashes( (string) $value );
-        }
     }
 }
 if ( ! isset( $GLOBALS['wpdb'] ) ) {
     $GLOBALS['wpdb'] = new OT_Test_WPDB();
+}
+if ( ! function_exists( 'esc_sql' ) ) {
+    function esc_sql( $value ) {
+        return addslashes( (string) $value );
+    }
 }
 
 if ( ! function_exists( 'trailingslashit' ) ) {

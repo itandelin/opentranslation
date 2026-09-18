@@ -92,7 +92,7 @@ class Scope {
         if ( ! empty( $post_types ) ) {
             $quoted = array();
             foreach ( $post_types as $post_type ) {
-                $quoted[] = "'" . $wpdb->esc_sql( $post_type ) . "'";
+                $quoted[] = "'" . esc_sql( $post_type ) . "'";
             }
             $linked_subquery .= ' AND p.post_type IN (' . implode( ',', $quoted ) . ')';
         }
@@ -104,11 +104,14 @@ class Scope {
         $has_any_link = "SELECT original_id FROM `{$meta_table}` WHERE meta_key = 'post_parent_id'";
 
         if ( 'include' === $config['mode'] ) {
-            $parts = array( "d.original_id IN ( {$linked_subquery} )" );
+            $parts = array();
+            if ( ! empty( $post_types ) ) {
+                $parts[] = "d.original_id IN ( {$linked_subquery} )";
+            }
             if ( $include_unlinked ) {
                 $parts[] = "d.original_id NOT IN ( {$has_any_link} )";
             }
-            return ' AND ( ' . implode( ' OR ', $parts ) . ' )';
+            return empty( $parts ) ? '' : ' AND ( ' . implode( ' OR ', $parts ) . ' )';
         }
 
         // exclude：任一命中即排除；排除未关联 = 只保留已关联

@@ -33,6 +33,14 @@ $sql = Scope::sql_where( 'zh_CN' );
 ot_assert_same( true, false !== strpos( $sql, 'd.original_id NOT IN' ), '含 OR d.original_id NOT IN' );
 ot_assert_same( true, false !== strpos( $sql, 'OR d.original_id' ), '未关联桶用 OR 连接' );
 
+ot_test_group( 'Scope：include 仅 unlinked' );
+
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( Scope::UNLINKED ) ) ) );
+$sql = Scope::sql_where( 'zh_CN' );
+ot_assert_same( true, false !== strpos( $sql, 'd.original_id NOT IN' ), '仅未关联桶时只保留 NOT IN' );
+ot_assert_same( true, false === strpos( $sql, 'original_id IN ( ' ), '仅未关联桶时不匹配已关联条目' );
+ot_assert_same( true, false === strpos( $sql, ' OR ' ), '仅未关联桶时无 OR 分支' );
+
 ot_test_group( 'Scope：exclude 构建' );
 
 ot_scope_set( array( 'zh_CN' => array( 'mode' => 'exclude', 'buckets' => array( 'product' ), 'published_only' => true ) ) );
