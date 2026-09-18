@@ -91,6 +91,10 @@ class Admin {
             $output['disabled_languages'] = array();
         }
 
+        // 本方法从空数组重建，未列出的键会被静默丢弃。
+        // 单价由 Usage 页维护，Settings 表单不含该字段，必须保留原值。
+        $output['model_pricing'] = isset( $existing['model_pricing'] ) && is_array( $existing['model_pricing'] ) ? $existing['model_pricing'] : array();
+
         // 白名单校验：languages/ 下只有 zh_CN 一份语言包，en_US 为源语言
         $allowed_languages = array( 'zh_CN', 'en_US' );
         $plugin_language = isset( $input['plugin_language'] ) ? sanitize_text_field( $input['plugin_language'] ) : 'zh_CN';
