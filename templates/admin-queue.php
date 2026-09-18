@@ -20,6 +20,51 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
         <div class="notice notice-success"><p><?php esc_html_e( 'Failed items reset and queue triggered.', 'opentranslation' ); ?></p></div>
     <?php elseif ( 'toggled' === $message ) : ?>
         <div class="notice notice-success"><p><?php esc_html_e( 'Language status updated.', 'opentranslation' ); ?></p></div>
+    <?php elseif ( 'circuit_reset' === $message ) : ?>
+        <div class="notice notice-success"><p><?php esc_html_e( '模型熔断状态已重置。', 'opentranslation' ); ?></p></div>
+    <?php endif; ?>
+
+    <?php
+    // 模型健康告警：单个熔断提示，全部熔断红色告警 + 重置入口
+    $circuit_models = \OpenTranslation\Encrypted_Options::get( 'opentranslation_models', array() );
+    $circuit_health = new \OpenTranslation\Model_Health();
+    $circuit_open_list = array();
+    $circuit_total  = 0;
+    foreach ( $circuit_models as $cm ) {
+        $cm_key = \OpenTranslation\Model_Identity::key( $cm );
+        $cm_state = $circuit_health->state( $cm_key );
+        if ( (int) $cm_state['open_until'] > 0 ) {
+            $remaining = max( 0, (int) $cm_state['open_until'] - time() );
+            $circuit_open_list[] = array(
+                'label'     => \OpenTranslation\Model_Identity::label( $cm ),
+                'remaining' => $remaining,
+            );
+            $circuit_total++;
+        }
+    }
+    $circuit_all = ! empty( $circuit_models ) && $circuit_total === count( $circuit_models );
+    if ( $circuit_total > 0 ) : ?>
+        <?php if ( $circuit_all ) : ?>
+            <div class="notice notice-error">
+                <p>
+                    <strong><?php esc_html_e( '所有模型均已熔断，队列已暂停。', 'opentranslation' ); ?></strong>
+                    <?php esc_html_e( '请检查模型配置或手动重置。', 'opentranslation' ); ?>
+                    <a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=opentranslation_reset_circuit&key=all&from=opentranslation-queue' ), 'opentranslation_reset_circuit' ) ); ?>"><?php esc_html_e( '重置全部', 'opentranslation' ); ?></a>
+                </p>
+            </div>
+        <?php else : ?>
+            <div class="notice notice-warning">
+                <p><?php
+                    printf(
+                        /* translators: %s is the comma-separated list of circuit-open model labels with remaining seconds. */
+                        esc_html__( '以下模型处于熔断中：%s', 'opentranslation' ),
+                        esc_html( implode( '; ', array_map( function ( $mo ) {
+                            return $mo['label'] . '（剩余 ' . (int) $mo['remaining'] . ' 秒）';
+                        }, $circuit_open_list ) ) )
+                    );
+                ?></p>
+            </div>
+        <?php endif; ?>
     <?php endif; ?>
 
     <h2><?php esc_html_e( 'Cache Overview', 'opentranslation' ); ?></h2>
@@ -56,6 +101,9 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
     <?php $last_run = \OpenTranslation\Scheduler::get_last_run_stats(); ?>
     <?php if ( ! empty( $last_run ) ) : ?>
         <h2><?php esc_html_e( 'Last Run', 'opentranslation' ); ?></h2>
+        <?php if ( ! empty( $last_run['circuit_open'] ) ) : ?>
+            <div class="notice notice-error"><p><?php esc_html_e( '本轮因所有模型熔断而跳过。', 'opentranslation' ); ?></p></div>
+        <?php endif; ?>
         <ul>
             <li><strong><?php esc_html_e( 'Finished', 'opentranslation' ); ?>:</strong>
                 <?php

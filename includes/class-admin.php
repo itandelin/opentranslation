@@ -118,6 +118,7 @@ class Admin {
         $this->handle_models_actions();
         settings_errors( 'opentranslation_models' );
         $models = Encrypted_Options::get( 'opentranslation_models', array() );
+        $health = new Model_Health();
         require OPENTRANSLATION_PLUGIN_DIR . 'templates/admin-models.php';
     }
 

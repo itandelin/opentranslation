@@ -93,6 +93,10 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
         </div>
     <?php endif; ?>
 
+    <?php if ( isset( $_GET['message'] ) && 'circuit_reset' === sanitize_text_field( wp_unslash( $_GET['message'] ) ) ) : ?>
+        <div class="notice notice-success"><p><?php esc_html_e( '模型熔断状态已重置。', 'opentranslation' ); ?></p></div>
+    <?php endif; ?>
+
     <table class="wp-list-table widefat fixed striped">
         <thead>
             <tr>
@@ -103,6 +107,7 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
                 <th style="width:8%;"><?php esc_html_e( 'Temp', 'opentranslation' ); ?></th>
                 <th style="width:9%;"><?php esc_html_e( 'Max Tokens', 'opentranslation' ); ?></th>
                 <th style="width:10%;"><?php esc_html_e( 'API Key', 'opentranslation' ); ?></th>
+                <th style="width:14%;"><?php esc_html_e( 'Health', 'opentranslation' ); ?></th>
                 <th><?php esc_html_e( 'Actions', 'opentranslation' ); ?></th>
             </tr>
         </thead>
@@ -121,6 +126,14 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
                     $max_tokens_display = ( isset( $model['max_tokens'] ) && $model['max_tokens'] > 0 )
                         ? $model['max_tokens']
                         : __( 'auto', 'opentranslation' );
+
+                    // 健康状态
+                    $model_key   = \OpenTranslation\Model_Identity::key( $model );
+                    $hstate      = $health->state( $model_key );
+                    $h_open      = (int) $hstate['open_until'];
+                    $h_remaining = $h_open > 0 ? max( 0, $h_open - time() ) : 0;
+                    $h_consec    = (int) $hstate['consecutive_failures'];
+                    $h_last_err  = isset( $hstate['last_error'] ) ? $hstate['last_error'] : '';
                     ?>
                     <tr>
                         <td><?php echo esc_html( $provider ); ?></td>
@@ -130,6 +143,51 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
                         <td><?php echo esc_html( $model['temperature'] ?? '' ); ?></td>
                         <td><?php echo esc_html( $max_tokens_display ); ?></td>
                         <td><code style="font-size:11px;"><?php echo esc_html( $key_display ); ?></code></td>
+                        <td>
+                            <?php
+                            if ( $h_open > 0 && $h_remaining > 0 ) :
+                                /* translators: %d is the remaining seconds. */
+                                printf(
+                                    '<span style="color:#d63638;"><strong>&#9888; %s</strong>（剩余 %d 秒）</span>',
+                                    esc_html__( '熔断中', 'opentranslation' ),
+                                    (int) $h_remaining
+                                );
+                            elseif ( $h_open > 0 && ! empty( $hstate['half_open'] ) ) :
+                                echo '<span>&#9684; ' . esc_html__( '半开探测', 'opentranslation' ) . '</span>';
+                            elseif ( $h_consec > 0 ) :
+                                printf(
+                                    '<span style="color:#dba617;">&#9888; %s</span>',
+                                    sprintf(
+                                        /* translators: %d is the consecutive failure count. */
+                                        esc_html__( '连续失败 %d', 'opentranslation' ),
+                                        (int) $h_consec
+                                    )
+                                );
+                            else :
+                                echo '<span style="color:#00a32a;">&#10003; ' . esc_html__( '正常', 'opentranslation' ) . '</span>';
+                            endif;
+                            ?>
+                            <br />
+                            <small style="color:#646970;">
+                                <?php
+                                printf(
+                                    /* translators: 1: total successes, 2: total failures. */
+                                    esc_html__( '成功 %1$d / 失败 %2$d', 'opentranslation' ),
+                                    (int) $hstate['total_success'],
+                                    (int) $hstate['total_failure']
+                                );
+                                ?>
+                                <?php if ( '' !== $h_last_err ) : ?>
+                                    <br /><?php echo esc_html( mb_substr( $h_last_err, 0, 60 ) ); ?><?php echo mb_strlen( $h_last_err ) > 60 ? '…' : ''; ?>
+                                <?php endif; ?>
+                            </small>
+                            <?php if ( $h_open > 0 ) : ?>
+                                <br />
+                                <a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=opentranslation_reset_circuit&key=' . $model_key . '&from=opentranslation-models' ), 'opentranslation_reset_circuit' ) ); ?>">
+                                    <?php esc_html_e( '重置', 'opentranslation' ); ?>
+                                </a>
+                            <?php endif; ?>
+                        </td>
                         <td>
                             <button type="button" class="button button-small ot-edit-model-btn"
                                 data-index="<?php echo esc_attr( $index ); ?>"
@@ -153,7 +211,7 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
                     </tr>
                 <?php endforeach; ?>
             <?php else : ?>
-                <tr><td colspan="8"><?php esc_html_e( 'No models configured.', 'opentranslation' ); ?></td></tr>
+                <tr><td colspan="9"><?php esc_html_e( 'No models configured.', 'opentranslation' ); ?></td></tr>
             <?php endif; ?>
         </tbody>
     </table>

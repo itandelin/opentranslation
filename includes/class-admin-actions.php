@@ -17,6 +17,7 @@ class Admin_Actions {
         add_action( 'admin_post_opentranslation_retry_failed', array( $this, 'handle_retry_failed' ) );
         add_action( 'admin_post_opentranslation_retry_item', array( $this, 'handle_retry_item' ) );
         add_action( 'admin_post_opentranslation_toggle_language', array( $this, 'handle_toggle_language' ) );
+        add_action( 'admin_post_opentranslation_reset_circuit', array( $this, 'handle_reset_circuit' ) );
     }
 
     public function handle_run_queue() {
@@ -78,6 +79,36 @@ class Admin_Actions {
         $settings['disabled_languages'] = array_values( $disabled );
         update_option( 'opentranslation_settings', $settings );
         wp_safe_redirect( admin_url( 'admin.php?page=opentranslation-queue&message=toggled' ) );
+        exit;
+    }
+
+    /**
+     * 重置单个或全部模型的熔断状态。
+     *
+     * GET key 为 32 位 hex（模型 key）或 all。来源页带 message=circuit_reset。
+     */
+    public function handle_reset_circuit() {
+        if ( ! current_user_can( 'manage_options' ) ) {
+            wp_die( esc_html__( 'Unauthorized.', 'opentranslation' ) );
+        }
+        check_admin_referer( 'opentranslation_reset_circuit' );
+
+        $key = isset( $_GET['key'] ) ? sanitize_text_field( wp_unslash( $_GET['key'] ) ) : '';
+        $page = isset( $_GET['from'] ) ? sanitize_text_field( wp_unslash( $_GET['from'] ) ) : 'opentranslation-queue';
+        if ( 'opentranslation-models' !== $page ) {
+            $page = 'opentranslation-queue';
+        }
+
+        if ( 'all' === $key ) {
+            $models = Encrypted_Options::get( 'opentranslation_models', array() );
+            foreach ( $models as $config ) {
+                Model_Health::reset( Model_Identity::key( $config ) );
+            }
+        } elseif ( 1 === preg_match( '/^[a-f0-9]{32}$/', $key ) ) {
+            Model_Health::reset( $key );
+        }
+
+        wp_safe_redirect( admin_url( 'admin.php?page=' . $page . '&message=circuit_reset' ) );
         exit;
     }
 }
