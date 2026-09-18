@@ -19,6 +19,8 @@ class Translator {
             return (int) $a['priority'] - (int) $b['priority'];
         } );
 
+        $glossary = Glossary::for_language( $language );
+
         $to_translate = array();
         $mappings = array();
         $errors = array();
@@ -61,7 +63,7 @@ class Translator {
                 Cache::set( $cache_key, $item['original'], $language, '', $context, '', 'pending' );
             }
 
-            $protector = new Protector();
+            $protector = new Protector( $glossary );
             $to_translate[] = array(
                 'id'        => $item['id'],
                 'original'  => $item['original'],

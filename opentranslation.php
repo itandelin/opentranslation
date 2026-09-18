@@ -31,6 +31,7 @@ $ot_files = array(
     'interface-model-client',
     'class-openai-client',
     'class-claude-client',
+    'class-glossary',
     'class-protector',
     'class-cache',
     'class-log',

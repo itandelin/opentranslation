@@ -31,6 +31,12 @@ if ( ! function_exists( 'apply_filters' ) ) {
     }
 }
 
+if ( ! function_exists( 'sanitize_text_field' ) ) {
+    function sanitize_text_field( $str ) {
+        return trim( strip_tags( (string) $str ) );
+    }
+}
+
 if ( ! function_exists( 'trailingslashit' ) ) {
     function trailingslashit( $string ) {
         return rtrim( $string, '/\\' ) . '/';

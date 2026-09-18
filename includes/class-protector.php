@@ -9,8 +9,13 @@ class Protector {
     private $tokens = array();
     private $counter = 0;
     private $patterns = array();
+    private $glossary_terms = array();
 
-    public function __construct() {
+    /**
+     * @param array $glossary_terms 术语列表（source/target/language/case_sensitive/whole_word）
+     */
+    public function __construct( array $glossary_terms = array() ) {
+        $this->glossary_terms = self::sort_terms( $glossary_terms );
         $this->patterns = array(
             '/<[^>]+>/',
             '/\[(\/?\w+[^\]]*)\]/',
@@ -39,7 +44,65 @@ class Protector {
                 return $token;
             }, $protected );
         }
+
+        // 术语必须放在所有既有模式之后：URL、标签、实体、TP 占位符
+        // 都已藏进 token，术语只在裸文本里匹配。
+        if ( ! empty( $this->glossary_terms ) ) {
+            $protected = $this->protect_glossary( $protected );
+        }
+
         return $protected;
+    }
+
+    /**
+     * 术语按长度降序排列：PCRE 交替在同一位置优先匹配靠前的分支，
+     * 从而保证「LED Cabinet Light」不会被「LED」拆开。
+     */
+    private static function sort_terms( array $terms ) {
+        usort( $terms, function ( $a, $b ) {
+            $len_a = mb_strlen( isset( $a['source'] ) ? $a['source'] : '' );
+            $len_b = mb_strlen( isset( $b['source'] ) ? $b['source'] : '' );
+            return $len_b - $len_a;
+        } );
+        return $terms;
+    }
+
+    /**
+     * 把原文中的术语替换为占位符，token 映射直接指向固定译法。
+     *
+     * @param string $text 已完成既有模式保护的文本
+     * @return string
+     */
+    private function protect_glossary( $text ) {
+        $pattern = Glossary::build_pattern( $this->glossary_terms );
+        if ( '' === $pattern ) {
+            return $text;
+        }
+        return preg_replace_callback( $pattern, function ( $matches ) {
+            $term = $this->match_term( $matches[0] );
+            $this->counter++;
+            $token = '<protect-' . $this->counter . '>';
+            $this->tokens[ $token ] = $term['target'];
+            return $token;
+        }, $text );
+    }
+
+    /**
+     * 按大小写设置找回命中的术语。
+     *
+     * @param string $matched 正则命中的原文片段
+     * @return array 术语（无命中时按原文原样兜底）
+     */
+    private function match_term( $matched ) {
+        foreach ( $this->glossary_terms as $term ) {
+            $hit = ! empty( $term['case_sensitive'] )
+                ? $term['source'] === $matched
+                : 0 === strcasecmp( $term['source'], $matched );
+            if ( $hit ) {
+                return $term;
+            }
+        }
+        return array( 'target' => $matched );
     }
 
     public function restore( $text ) {
