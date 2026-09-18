@@ -35,6 +35,7 @@ $ot_files = array(
     'class-cache',
     'class-log',
     'class-tp-storage-adapter',
+    'class-model-identity',
     'class-translator',
     'class-scheduler',
     'class-admin-ajax',
