@@ -37,6 +37,18 @@ if ( ! function_exists( 'sanitize_text_field' ) ) {
     }
 }
 
+if ( ! function_exists( 'sanitize_textarea_field' ) ) {
+    function sanitize_textarea_field( $str ) {
+        return trim( strip_tags( (string) $str ) );
+    }
+}
+
+if ( ! function_exists( 'absint' ) ) {
+    function absint( $value ) {
+        return abs( (int) $value );
+    }
+}
+
 // 内存版 option：测试里直接读写 $GLOBALS['ot_test_options']
 if ( ! function_exists( 'get_option' ) ) {
     $GLOBALS['ot_test_options'] = array();

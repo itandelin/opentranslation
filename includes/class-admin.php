@@ -77,11 +77,7 @@ class Admin {
     public function sanitize_settings( $input ) {
         $existing = get_option( 'opentranslation_settings', array() );
 
-        $output = array();
-        $output['batch_size'] = isset( $input['batch_size'] ) ? absint( $input['batch_size'] ) : 10;
-        $output['cron_interval'] = isset( $input['cron_interval'] ) ? absint( $input['cron_interval'] ) : 5;
-        $output['rate_limit_per_minute'] = isset( $input['rate_limit_per_minute'] ) ? absint( $input['rate_limit_per_minute'] ) : 20;
-        $output['system_prompt'] = isset( $input['system_prompt'] ) ? sanitize_textarea_field( $input['system_prompt'] ) : self::default_system_prompt();
+        $output = self::sanitize_numeric_settings( $input );
 
         // 暂停语言由 Queue 页维护，Settings 表单不含该字段。
         // 若不保留原值，保存一次设置就会让所有已暂停语言恢复翻译，直接影响 API 账单。
@@ -112,6 +108,28 @@ class Admin {
         $output['scope'] = Scope::sanitize_settings( $raw_scope, $languages );
 
         return $output;
+    }
+
+    /**
+     * 数值与提示词字段的规范化，抽出供配置导入复用（P2-5）。
+     *
+     * 只做 absint / sanitize_textarea_field，不额外夹取上下限——与抽取前完全一致。
+     * 范围限制在使用处完成（Scheduler::run_rounds、Plugin::add_cron_interval）。
+     *
+     * @param array $input 原始输入
+     * @return array 只含 batch_size / cron_interval / rate_limit_per_minute / system_prompt
+     */
+    public static function sanitize_numeric_settings( $input ) {
+        $input = is_array( $input ) ? $input : array();
+
+        return array(
+            'batch_size'            => isset( $input['batch_size'] ) ? absint( $input['batch_size'] ) : 10,
+            'cron_interval'         => isset( $input['cron_interval'] ) ? absint( $input['cron_interval'] ) : 5,
+            'rate_limit_per_minute' => isset( $input['rate_limit_per_minute'] ) ? absint( $input['rate_limit_per_minute'] ) : 20,
+            'system_prompt'         => isset( $input['system_prompt'] )
+                ? sanitize_textarea_field( $input['system_prompt'] )
+                : self::default_system_prompt(),
+        );
     }
 
     public static function default_system_prompt() {
@@ -240,7 +258,7 @@ class Admin {
      *
      * OpenAI 与 Claude 均要求该范围，超界会被上游拒绝。
      */
-    private static function clamp_temperature( $raw ) {
+    public static function clamp_temperature( $raw ) {
         return max( 0.0, min( 2.0, (float) $raw ) );
     }
 
