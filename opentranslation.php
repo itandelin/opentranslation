@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'OPENTRANSLATION_VERSION', '1.0.0' );
 define( 'OPENTRANSLATION_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OPENTRANSLATION_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'OPENTRANSLATION_DB_VERSION', '1' );
+define( 'OPENTRANSLATION_DB_VERSION', '2' );
 
 $ot_files = array(
     'class-activator',

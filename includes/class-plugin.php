@@ -33,6 +33,7 @@ class Plugin {
             new Admin_Actions();
         }
 
+        Activator::maybe_upgrade();
         new Scheduler();
     }
 

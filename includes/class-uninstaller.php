@@ -83,7 +83,7 @@ class Uninstaller {
     private static function drop_tables() {
         global $wpdb;
 
-        foreach ( array( 'cache', 'log', 'rate_limit' ) as $suffix ) {
+        foreach ( array( 'cache', 'log', 'rate_limit', 'usage' ) as $suffix ) {
             $table = $wpdb->prefix . 'opentranslation_' . $suffix;
             $wpdb->query( "DROP TABLE IF EXISTS `{$table}`" );
         }
