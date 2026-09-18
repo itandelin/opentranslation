@@ -21,6 +21,11 @@ class Translator {
 
         $glossary = Glossary::for_language( $language );
 
+        // 熔断中的模型不参与本轮；缓存命中与直通不需要模型，
+        // 因此这里只过滤，真正的早退在 $to_translate 计算之后。
+        $health = new Model_Health();
+        $models = $health->filter_available( $models );
+
         $to_translate = array();
         $mappings = array();
         $errors = array();
@@ -75,7 +80,20 @@ class Translator {
         }
 
         if ( empty( $to_translate ) ) {
+            $health->flush();
             return array( 'translations' => $mappings, 'request_units' => $request_units );
+        }
+
+        // 所有模型都在熔断中：不标失败、不计重试，条目保持 pending 等下一轮。
+        if ( empty( $models ) ) {
+            Log::add( '', 'model_circuit_open', __( 'All configured models are circuit-open; skipping.', 'opentranslation' ) );
+            $health->flush();
+            return array(
+                'translations'  => $mappings,
+                'request_units' => $request_units,
+                'circuit_open'  => true,
+                'error'         => __( 'All models circuit-open.', 'opentranslation' ),
+            );
         }
 
         $chunk_size = (int) apply_filters( 'opentranslation_translate_chunk_size', 10, $language, count( $to_translate ) );
@@ -98,10 +116,15 @@ class Translator {
                 $units = max( 1, (int) $client->get_last_request_units() );
                 $request_units += $units;
                 Usage::record( Model_Identity::key( $model_config ), Model_Identity::label( $model_config ), $client->get_last_usage(), $units );
+
+                $model_key = Model_Identity::key( $model_config );
                 if ( ! is_wp_error( $response ) ) {
+                    $health->record_success( $model_key );
                     $used_model = $model_config['model'];
                     break;
                 }
+                // 能到这里说明客户端内部的重试与切块都已用尽。
+                $health->record_failure( $model_key, $response->get_error_message() );
                 Log::add( '', 'model_fallback', $model_config['model'] . ': ' . $response->get_error_message() );
             }
 
@@ -158,6 +181,9 @@ class Translator {
             $result['error'] = implode( ' | ', array_unique( $errors ) );
             $result['errors'] = array_values( array_unique( $errors ) );
         }
+
+        // 整批只落盘一次，把写入次数从「每次模型调用」降到「每批一次」。
+        $health->flush();
 
         return $result;
     }
