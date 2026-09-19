@@ -37,7 +37,6 @@ class Log {
             'retry'                 => self::LEVEL_WARN,
             'model_fallback'        => self::LEVEL_WARN,
             'model_circuit_open'    => self::LEVEL_WARN,
-            'placeholder_failed'    => self::LEVEL_WARN,
             'scheduler_run'         => self::LEVEL_DEBUG,
         );
     }
