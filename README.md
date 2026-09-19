@@ -425,7 +425,7 @@ apply_filters( 'opentranslation_allow_frontend_live_translation', false )
 日志分四级并着色显示：
 
 - `error`：`failed`、`tp_engine_error`、`tp_bulk_update_failed`、`cache_*_failed`
-- `warn`：`retry`、`model_fallback`
+- `warn`：`retry`、`model_fallback`、`model_circuit_open`
 - `info`：其它动作
 - `debug`：`scheduler_run`（调度心跳），仅在 `WP_DEBUG` 开启时入库
 
