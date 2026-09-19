@@ -66,7 +66,7 @@ class Admin_Glossary {
         if ( isset( $_POST['delete_term'] ) && isset( $terms[ $index ] ) ) {
             array_splice( $terms, $index, 1 );
             Glossary::save( $terms );
-            $this->notice( 'term_deleted', __( '术语已删除。', 'opentranslation' ) );
+            $this->notice( 'term_deleted', __( 'Term deleted.', 'opentranslation' ) );
             return;
         }
 
@@ -78,14 +78,14 @@ class Admin_Glossary {
         if ( isset( $_POST['update_term'] ) && isset( $terms[ $index ] ) ) {
             $terms[ $index ] = $term;
             Glossary::save( $terms );
-            $this->notice( 'term_updated', __( '术语已更新。', 'opentranslation' ) );
+            $this->notice( 'term_updated', __( 'Term updated.', 'opentranslation' ) );
             return;
         }
 
         if ( isset( $_POST['add_term'] ) ) {
             $terms[] = $term;
             Glossary::save( $terms );
-            $this->notice( 'term_added', __( '术语已添加。', 'opentranslation' ) );
+            $this->notice( 'term_added', __( 'Term added.', 'opentranslation' ) );
         }
     }
 
@@ -100,7 +100,7 @@ class Admin_Glossary {
         $language = isset( $_POST['language'] ) ? sanitize_text_field( wp_unslash( $_POST['language'] ) ) : '';
 
         if ( ! in_array( $language, self::language_whitelist(), true ) ) {
-            $this->error( 'invalid_language', __( '语言不在可翻译语言列表中。', 'opentranslation' ) );
+            $this->error( 'invalid_language', __( 'Language is not in the translatable language list.', 'opentranslation' ) );
             return null;
         }
 

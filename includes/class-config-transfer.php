@@ -144,13 +144,13 @@ class Config_Transfer {
      */
     private static function check_format( $data ) {
         if ( ! is_array( $data ) || ! isset( $data['format_version'] ) ) {
-            return self::rejection( __( '文件缺少 format_version，不是有效的 OpenTranslation 配置文件。', 'opentranslation' ) );
+            return self::rejection( __( 'The file has no format_version and is not a valid OpenTranslation config file.', 'opentranslation' ) );
         }
 
         if ( self::FORMAT_VERSION !== (int) $data['format_version'] ) {
             return self::rejection( sprintf(
                 /* translators: 1: file format version, 2: supported format version. */
-                __( '配置文件 format_version 为 %1$s，当前插件只支持 %2$d。', 'opentranslation' ),
+                __( 'The config file format_version is %1$s, but this plugin only supports %2$d.', 'opentranslation' ),
                 (string) $data['format_version'],
                 self::FORMAT_VERSION
             ) );

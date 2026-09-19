@@ -23,7 +23,7 @@ foreach ( $terms as $ot_term ) {
     <h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 
     <div class="notice notice-info inline">
-        <p><?php esc_html_e( '术语在送交模型前被替换为占位符，模型看不到该词，译文中该位置固定为你指定的译法。适用于品牌名、产品型号、专有名词；不适用于普通词汇，尤其是俄语等有词形变化的语言。术语只影响之后的翻译，已有译文不会自动重翻。', 'opentranslation' ); ?></p>
+        <p><?php esc_html_e( 'Terms are replaced with placeholders before the request is sent, so the model never sees the term and the translation always uses the wording you specify. This suits brand names, product models, and proper nouns; it does not suit ordinary words, especially in inflected languages such as Russian. Terms only affect future translations; existing translations are not retranslated automatically.', 'opentranslation' ); ?></p>
     </div>
 
     <h2 id="ot-term-form-title"><?php esc_html_e( 'Add Term', 'opentranslation' ); ?></h2>
@@ -35,14 +35,14 @@ foreach ( $terms as $ot_term ) {
                 <th><label for="ot-term-source"><?php esc_html_e( 'Source', 'opentranslation' ); ?></label></th>
                 <td>
                     <input type="text" name="source" id="ot-term-source" class="regular-text" maxlength="100" />
-                    <p class="description"><?php esc_html_e( '原文中要固定处理的词，例如品牌名或产品型号。不得含尖括号，不得只由数字组成。', 'opentranslation' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'The source word to handle verbatim, such as a brand name or product model. It must not contain angle brackets and must not consist of digits only.', 'opentranslation' ); ?></p>
                 </td>
             </tr>
             <tr>
                 <th><label for="ot-term-target"><?php esc_html_e( 'Target', 'opentranslation' ); ?></label></th>
                 <td>
                     <input type="text" name="target" id="ot-term-target" class="regular-text" maxlength="200" />
-                    <p class="description"><?php esc_html_e( '留空 = 不翻译（与原文保持一致）。填写则译文中该位置固定为这里的内容。', 'opentranslation' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'Leave empty to keep the source text as is. If filled in, the translation always uses this wording.', 'opentranslation' ); ?></p>
                 </td>
             </tr>
             <tr>
@@ -61,12 +61,12 @@ foreach ( $terms as $ot_term ) {
                 <td>
                     <label>
                         <input type="checkbox" name="case_sensitive" id="ot-term-case" value="1" checked="checked" />
-                        <?php esc_html_e( '区分大小写', 'opentranslation' ); ?>
+                        <?php esc_html_e( 'Case sensitive', 'opentranslation' ); ?>
                     </label>
                     <br />
                     <label>
                         <input type="checkbox" name="whole_word" id="ot-term-whole" value="1" checked="checked" />
-                        <?php esc_html_e( '全词匹配（不命中 sensors 里的 sensor）', 'opentranslation' ); ?>
+                        <?php esc_html_e( 'Whole word only (does not match "sensor" inside "sensors")', 'opentranslation' ); ?>
                     </label>
                 </td>
             </tr>
@@ -74,7 +74,7 @@ foreach ( $terms as $ot_term ) {
                 <th><label for="ot-term-note"><?php esc_html_e( 'Note', 'opentranslation' ); ?></label></th>
                 <td>
                     <input type="text" name="note" id="ot-term-note" class="regular-text" maxlength="200" />
-                    <p class="description"><?php esc_html_e( '用途备注，仅后台可见。', 'opentranslation' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'Internal note, visible in the admin only.', 'opentranslation' ); ?></p>
                 </td>
             </tr>
         </table>
@@ -135,7 +135,7 @@ foreach ( $terms as $ot_term ) {
                 ?>
                 <tr>
                     <td><code><?php echo esc_html( $ot_source ); ?></code></td>
-                    <td><?php echo esc_html( $ot_target === $ot_source ? __( '不翻译', 'opentranslation' ) : $ot_target ); ?></td>
+                    <td><?php echo esc_html( $ot_target === $ot_source ? __( 'Keep untranslated', 'opentranslation' ) : $ot_target ); ?></td>
                     <td><?php echo esc_html( '' === $ot_lang ? __( 'All', 'opentranslation' ) : $ot_lang ); ?></td>
                     <td><?php echo esc_html( $ot_case ? __( 'Yes', 'opentranslation' ) : __( 'No', 'opentranslation' ) ); ?></td>
                     <td><?php echo esc_html( $ot_whole ? __( 'Yes', 'opentranslation' ) : __( 'No', 'opentranslation' ) ); ?></td>

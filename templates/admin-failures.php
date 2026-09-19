@@ -10,13 +10,13 @@ $total_pages = (int) ceil( $total / $per_page );
     <h1><?php esc_html_e( 'Failed Translations', 'opentranslation' ); ?></h1>
 
     <?php if ( 'retried' === $message ) : ?>
-        <div class="notice notice-success"><p><?php esc_html_e( '该条目已重置为待翻译，将在下次队列执行时重试。', 'opentranslation' ); ?></p></div>
+        <div class="notice notice-success"><p><?php esc_html_e( 'The entry has been reset to pending and will be retried on the next queue run.', 'opentranslation' ); ?></p></div>
     <?php elseif ( 'invalid' === $message ) : ?>
-        <div class="notice notice-error"><p><?php esc_html_e( '无效的条目标识，未做任何改动。', 'opentranslation' ); ?></p></div>
+        <div class="notice notice-error"><p><?php esc_html_e( 'Invalid entry identifier; nothing was changed.', 'opentranslation' ); ?></p></div>
     <?php endif; ?>
 
     <p class="description">
-        <?php esc_html_e( '这些条目已达到最大重试次数（默认 3 次）。原文会保持不翻译状态，直到你手动重试，或在 TranslatePress 编辑器中人工填写译文。常见原因：模型持续返回格式错误、占位符校验未通过、上游网关长时间不可用。', 'opentranslation' ); ?>
+        <?php esc_html_e( 'These entries have reached the maximum retry count (3 by default). The source text stays untranslated until you retry manually or fill in the translation in the TranslatePress editor. Common causes: the model keeps returning malformed output, placeholder validation fails, or the upstream gateway has been unavailable for a long time.', 'opentranslation' ); ?>
     </p>
 
     <ul class="subsubsub">

@@ -44,19 +44,19 @@ class Admin {
             'ajax_url' => admin_url( 'admin-ajax.php' ),
             'nonce'    => wp_create_nonce( 'opentranslation_fetch_models_nonce' ),
             'strings'  => array(
-                'fetching'     => __( '正在获取模型列表...', 'opentranslation' ),
-                'fetch_models' => __( '获取模型列表', 'opentranslation' ),
-                'no_models'    => __( '未获取到模型列表，请手动输入模型名称。', 'opentranslation' ),
-                'error'        => __( '获取失败，请检查 API Key 和 Base URL 是否正确。', 'opentranslation' ),
-                'testing'      => __( '正在测试...', 'opentranslation' ),
-                'test_model'   => __( '测试', 'opentranslation' ),
-                'test_success' => __( '连接成功', 'opentranslation' ),
-                'test_failed'  => __( '连接失败', 'opentranslation' ),
+                'fetching'     => __( 'Fetching model list...', 'opentranslation' ),
+                'fetch_models' => __( 'Fetch Models', 'opentranslation' ),
+                'no_models'    => __( 'No model list returned. Please enter the model name manually.', 'opentranslation' ),
+                'error'        => __( 'Fetch failed. Please check the API Key and Base URL.', 'opentranslation' ),
+                'testing'      => __( 'Testing...', 'opentranslation' ),
+                'test_model'   => __( 'Test', 'opentranslation' ),
+                'test_success' => __( 'Connection successful', 'opentranslation' ),
+                'test_failed'  => __( 'Connection failed', 'opentranslation' ),
                 'edit_model'   => __( 'Edit Model', 'opentranslation' ),
                 'add_model'    => __( 'Add Model', 'opentranslation' ),
                 'edit_term'    => __( 'Edit Term', 'opentranslation' ),
                 'add_term'     => __( 'Add Term', 'opentranslation' ),
-                'insecure_transport' => __( '当前后台不是 HTTPS，API Key 将以明文经网络传输。建议为后台启用 HTTPS。', 'opentranslation' ),
+                'insecure_transport' => __( 'The admin area is not served over HTTPS, so the API Key will be transmitted in plain text. Enabling HTTPS for the admin area is recommended.', 'opentranslation' ),
             ),
             'test_nonce' => wp_create_nonce( 'opentranslation_test_model_nonce' ),
         ) );
@@ -292,6 +292,6 @@ class Admin {
 
         $models[ $index ] = array_merge( $models[ $index ], $fields );
         Encrypted_Options::set( 'opentranslation_models', $models );
-        add_settings_error( 'opentranslation_models', 'model_updated', __( '模型已更新。', 'opentranslation' ), 'success' );
+        add_settings_error( 'opentranslation_models', 'model_updated', __( 'Model updated.', 'opentranslation' ), 'success' );
     }
 }

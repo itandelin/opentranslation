@@ -8,7 +8,7 @@ $first_currency = ! empty( $pricing ) ? reset( $pricing )['currency'] : 'USD';
 ?>
 <div class="wrap">
     <h1><?php esc_html_e( 'Usage', 'opentranslation' ); ?></h1>
-    <p class="description"><?php esc_html_e( '统计口径：每次 HTTP 尝试计 1 次请求（含重试与切块）；token 数来自模型响应的 usage 字段；日期按 UTC。费用为估算值，仅供参考，实际以服务商账单为准。', 'opentranslation' ); ?></p>
+    <p class="description"><?php esc_html_e( 'How this is counted: each HTTP attempt counts as one request (including retries and split requests); token counts come from the usage field of the model response; dates are in UTC. Costs are estimates for reference only; the provider invoice is authoritative.', 'opentranslation' ); ?></p>
 
     <h2><?php esc_html_e( 'This Month', 'opentranslation' ); ?></h2>
     <ul>
@@ -18,10 +18,10 @@ $first_currency = ! empty( $pricing ) ? reset( $pricing )['currency'] : 'USD';
         <li><strong><?php esc_html_e( 'Total tokens', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $fmt( $month['total_tokens'] ) ); ?></li>
         <li><strong><?php esc_html_e( 'Estimated cost', 'opentranslation' ); ?>:</strong>
             <?php if ( null === $month_cost ) : ?>
-                <em><?php esc_html_e( '未配置单价', 'opentranslation' ); ?></em>
+                <em><?php esc_html_e( 'No pricing configured', 'opentranslation' ); ?></em>
             <?php else : ?>
                 <?php echo esc_html( number_format_i18n( $month_cost, 4 ) . ' ' . $first_currency ); ?>
-                <small><?php esc_html_e( '（仅含已配置单价的模型）', 'opentranslation' ); ?></small>
+                <small><?php esc_html_e( '(only models with pricing configured)', 'opentranslation' ); ?></small>
             <?php endif; ?>
         </li>
     </ul>
@@ -52,7 +52,7 @@ $first_currency = ! empty( $pricing ) ? reset( $pricing )['currency'] : 'USD';
                         ?>
                         <tr>
                             <td><?php echo esc_html( $row['model_label'] ); ?>
-                                <?php if ( $no_usage ) : ?><br /><small style="color:#d63638;"><?php esc_html_e( '该模型未返回用量数据', 'opentranslation' ); ?></small><?php endif; ?>
+                                <?php if ( $no_usage ) : ?><br /><small style="color:#d63638;"><?php esc_html_e( 'This model returned no usage data', 'opentranslation' ); ?></small><?php endif; ?>
                             </td>
                             <td><?php echo esc_html( $fmt( $row['requests'] ) ); ?></td>
                             <td><?php echo esc_html( $fmt( $row['prompt_tokens'] ) ); ?></td>

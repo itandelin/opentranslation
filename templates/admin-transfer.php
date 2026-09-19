@@ -10,9 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $key_labels = array(
-    'reused'    => __( '沿用本站已有密钥', 'opentranslation' ),
-    'from_file' => __( '文件提供', 'opentranslation' ),
-    'missing'   => __( '缺失，需手动填写', 'opentranslation' ),
+    'reused'    => __( 'Reuse existing key on this site', 'opentranslation' ),
+    'from_file' => __( 'From file', 'opentranslation' ),
+    'missing'   => __( 'Missing, needs manual entry', 'opentranslation' ),
 );
 ?>
 <div class="wrap">
@@ -31,31 +31,31 @@ $key_labels = array(
             <p><?php echo esc_html( $result['reason'] ); ?></p>
         </div>
         <p><a href="<?php echo esc_url( admin_url( 'admin.php?page=' . \OpenTranslation\Admin_Transfer::PAGE ) ); ?>" class="button">
-            <?php esc_html_e( '返回', 'opentranslation' ); ?>
+            <?php esc_html_e( 'Back', 'opentranslation' ); ?>
         </a></p>
     <?php else : ?>
         <?php $summary = $result['summary']; ?>
 
-        <h2><?php esc_html_e( '导入预览', 'opentranslation' ); ?></h2>
+        <h2><?php esc_html_e( 'Import Preview', 'opentranslation' ); ?></h2>
 
         <div class="notice notice-warning inline">
-            <p><strong><?php esc_html_e( '导入将覆盖现有模型与术语表，建议先导出当前配置作为备份。', 'opentranslation' ); ?></strong></p>
+            <p><strong><?php esc_html_e( 'Importing overwrites the existing models and glossary. Exporting the current configuration as a backup first is recommended.', 'opentranslation' ); ?></strong></p>
         </div>
 
         <ul>
-            <li><strong><?php esc_html_e( '来源站点', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $summary['site_url'] ); ?></li>
-            <li><strong><?php esc_html_e( '导出时间', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $summary['exported_at'] ); ?></li>
-            <li><strong><?php esc_html_e( '来源插件版本', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $summary['plugin_version'] ); ?></li>
-            <li><strong><?php esc_html_e( '设置项', 'opentranslation' ); ?>:</strong> <?php echo esc_html( number_format_i18n( $summary['settings'] ) ); ?></li>
-            <li><strong><?php esc_html_e( '模型', 'opentranslation' ); ?>:</strong> <?php echo esc_html( number_format_i18n( $summary['models'] ) ); ?></li>
-            <li><strong><?php esc_html_e( '术语', 'opentranslation' ); ?>:</strong> <?php echo esc_html( number_format_i18n( $summary['glossary'] ) ); ?></li>
-            <li><strong><?php esc_html_e( '含范围配置的语言', 'opentranslation' ); ?>:</strong> <?php echo esc_html( number_format_i18n( $summary['scope_languages'] ) ); ?></li>
-            <li><strong><?php esc_html_e( '文件是否含密钥', 'opentranslation' ); ?>:</strong>
-                <?php echo $summary['includes_api_keys'] ? esc_html__( '是', 'opentranslation' ) : esc_html__( '否', 'opentranslation' ); ?>
+            <li><strong><?php esc_html_e( 'Source site', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $summary['site_url'] ); ?></li>
+            <li><strong><?php esc_html_e( 'Exported at', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $summary['exported_at'] ); ?></li>
+            <li><strong><?php esc_html_e( 'Source plugin version', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $summary['plugin_version'] ); ?></li>
+            <li><strong><?php esc_html_e( 'Settings', 'opentranslation' ); ?>:</strong> <?php echo esc_html( number_format_i18n( $summary['settings'] ) ); ?></li>
+            <li><strong><?php esc_html_e( 'Models', 'opentranslation' ); ?>:</strong> <?php echo esc_html( number_format_i18n( $summary['models'] ) ); ?></li>
+            <li><strong><?php esc_html_e( 'Terms', 'opentranslation' ); ?>:</strong> <?php echo esc_html( number_format_i18n( $summary['glossary'] ) ); ?></li>
+            <li><strong><?php esc_html_e( 'Languages with scope config', 'opentranslation' ); ?>:</strong> <?php echo esc_html( number_format_i18n( $summary['scope_languages'] ) ); ?></li>
+            <li><strong><?php esc_html_e( 'File contains keys', 'opentranslation' ); ?>:</strong>
+                <?php echo $summary['includes_api_keys'] ? esc_html__( 'Yes', 'opentranslation' ) : esc_html__( 'No', 'opentranslation' ); ?>
             </li>
         </ul>
 
-        <h3><?php esc_html_e( '将导入的模型', 'opentranslation' ); ?></h3>
+        <h3><?php esc_html_e( 'Models to import', 'opentranslation' ); ?></h3>
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
@@ -68,7 +68,7 @@ $key_labels = array(
             </thead>
             <tbody>
                 <?php if ( empty( $result['normalized']['models'] ) ) : ?>
-                    <tr><td colspan="5"><?php esc_html_e( '文件中没有可导入的模型。', 'opentranslation' ); ?></td></tr>
+                    <tr><td colspan="5"><?php esc_html_e( 'The file contains no importable models.', 'opentranslation' ); ?></td></tr>
                 <?php else : ?>
                     <?php foreach ( $result['normalized']['models'] as $index => $model ) : ?>
                         <?php $status = \OpenTranslation\Admin_Transfer::key_status( $model, $result['key_sources'][ $index ] ?? null ); ?>
@@ -87,19 +87,19 @@ $key_labels = array(
         </table>
 
         <?php if ( ! empty( $result['skipped'] ) ) : ?>
-            <h3><?php esc_html_e( '将被跳过', 'opentranslation' ); ?></h3>
+            <h3><?php esc_html_e( 'Will be skipped', 'opentranslation' ); ?></h3>
             <table class="wp-list-table widefat fixed striped">
                 <thead>
                     <tr>
-                        <th style="width:12%;"><?php esc_html_e( '类型', 'opentranslation' ); ?></th>
-                        <th style="width:28%;"><?php esc_html_e( '条目', 'opentranslation' ); ?></th>
-                        <th><?php esc_html_e( '原因', 'opentranslation' ); ?></th>
+                        <th style="width:12%;"><?php esc_html_e( 'Type', 'opentranslation' ); ?></th>
+                        <th style="width:28%;"><?php esc_html_e( 'Entry', 'opentranslation' ); ?></th>
+                        <th><?php esc_html_e( 'Reason', 'opentranslation' ); ?></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ( $result['skipped'] as $item ) : ?>
                         <tr>
-                            <td><?php echo esc_html( 'model' === $item['type'] ? __( '模型', 'opentranslation' ) : __( '术语', 'opentranslation' ) ); ?></td>
+                            <td><?php echo esc_html( 'model' === $item['type'] ? __( 'Models', 'opentranslation' ) : __( 'Terms', 'opentranslation' ) ); ?></td>
                             <td><?php echo esc_html( $item['label'] ); ?></td>
                             <td><?php echo esc_html( $item['reason'] ); ?></td>
                         </tr>
@@ -112,10 +112,10 @@ $key_labels = array(
             <?php wp_nonce_field( \OpenTranslation\Admin_Transfer::NONCE_ACTION, \OpenTranslation\Admin_Transfer::NONCE_FIELD ); ?>
             <p class="submit">
                 <button type="submit" name="confirm_import" value="1" class="button button-primary">
-                    <?php esc_html_e( '确认导入', 'opentranslation' ); ?>
+                    <?php esc_html_e( 'Confirm import', 'opentranslation' ); ?>
                 </button>
                 <button type="submit" name="cancel_import" value="1" class="button">
-                    <?php esc_html_e( '取消', 'opentranslation' ); ?>
+                    <?php esc_html_e( 'Cancel', 'opentranslation' ); ?>
                 </button>
             </p>
         </form>
@@ -125,23 +125,23 @@ $key_labels = array(
 
     <h2><?php esc_html_e( 'Export', 'opentranslation' ); ?></h2>
     <p class="description">
-        <?php esc_html_e( '导出设置、模型、术语表与翻译范围。不导出暂停语言、模型健康、用量、日志与缓存——这些是本站的运行时状态。', 'opentranslation' ); ?>
+        <?php esc_html_e( 'Exports settings, models, glossary, and translation scope. Paused languages, model health, usage, logs, and cache are not exported because they are runtime state of this site.', 'opentranslation' ); ?>
     </p>
     <form method="post">
         <?php wp_nonce_field( \OpenTranslation\Admin_Transfer::NONCE_ACTION, \OpenTranslation\Admin_Transfer::NONCE_FIELD ); ?>
         <p>
             <label>
                 <input type="checkbox" name="include_api_keys" value="1" />
-                <?php esc_html_e( '包含 API Key', 'opentranslation' ); ?>
+                <?php esc_html_e( 'Include API Keys', 'opentranslation' ); ?>
             </label>
             <br />
             <span style="color:#d63638;">
-                <?php esc_html_e( '勾选后导出文件将包含明文密钥，请妥善保管，用后删除。', 'opentranslation' ); ?>
+                <?php esc_html_e( 'When checked, the exported file contains plain-text keys. Store it safely and delete it after use.', 'opentranslation' ); ?>
             </span>
         </p>
         <p class="submit">
             <button type="submit" name="export_config" value="1" class="button button-primary">
-                <?php esc_html_e( '导出配置', 'opentranslation' ); ?>
+                <?php esc_html_e( 'Export configuration', 'opentranslation' ); ?>
             </button>
         </p>
     </form>
@@ -150,7 +150,7 @@ $key_labels = array(
 
     <h2><?php esc_html_e( 'Import', 'opentranslation' ); ?></h2>
     <p class="description">
-        <?php esc_html_e( '上传后先展示预览，确认后才写入。不含密钥的文件会按模型标识沿用本站已有密钥。', 'opentranslation' ); ?>
+        <?php esc_html_e( 'A preview is shown after upload and nothing is written until you confirm. For files without keys, existing keys on this site are reused by model identity.', 'opentranslation' ); ?>
     </p>
     <form method="post" enctype="multipart/form-data">
         <?php wp_nonce_field( \OpenTranslation\Admin_Transfer::NONCE_ACTION, \OpenTranslation\Admin_Transfer::NONCE_FIELD ); ?>
@@ -159,7 +159,7 @@ $key_labels = array(
         </p>
         <p class="submit">
             <button type="submit" name="upload_config" value="1" class="button button-primary">
-                <?php esc_html_e( '上传并预览', 'opentranslation' ); ?>
+                <?php esc_html_e( 'Upload and preview', 'opentranslation' ); ?>
             </button>
         </p>
     </form>

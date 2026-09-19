@@ -89,7 +89,7 @@ class Admin_Usage {
         $settings['model_pricing'] = $pricing;
         update_option( 'opentranslation_settings', $settings );
 
-        add_settings_error( 'opentranslation_usage', 'pricing_saved', __( '单价已保存。', 'opentranslation' ), 'success' );
+        add_settings_error( 'opentranslation_usage', 'pricing_saved', __( 'Pricing saved.', 'opentranslation' ), 'success' );
     }
 
     /**

@@ -52,7 +52,7 @@ class Scope {
                 $config['mode'] = 'all';
                 $warnings[] = sprintf(
                     /* translators: %s is a language code. */
-                    __( '%s：未选择任何内容，已回落为全部。', 'opentranslation' ),
+                    __( '%s: nothing selected; fell back to all content.', 'opentranslation' ),
                     $language
                 );
             }
@@ -199,7 +199,7 @@ class Scope {
                     'scope_empty_' . $language,
                     sprintf(
                         /* translators: %s is a language code. */
-                        __( '%s：当前翻译范围下没有可翻译条目。', 'opentranslation' ),
+                        __( '%s: no translatable entries under the current translation scope.', 'opentranslation' ),
                         $language
                     ),
                     'warning'

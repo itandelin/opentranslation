@@ -30,14 +30,14 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
                 <th><?php esc_html_e( 'API Key', 'opentranslation' ); ?></th>
                 <td>
                     <input type="password" name="api_key" id="ot-api-key" class="regular-text" autocomplete="new-password" />
-                    <p class="description" id="ot-api-key-hint" style="display:none;"><?php esc_html_e( '留空表示保持现有 API Key 不变。', 'opentranslation' ); ?></p>
+                    <p class="description" id="ot-api-key-hint" style="display:none;"><?php esc_html_e( 'Leave empty to keep the current API Key.', 'opentranslation' ); ?></p>
                 </td>
             </tr>
             <tr>
                 <th><?php esc_html_e( 'Base URL (optional)', 'opentranslation' ); ?></th>
                 <td>
                     <input type="url" name="base_url" class="regular-text" placeholder="https://api.openai.com/v1/" />
-                    <p class="description"><?php esc_html_e( '留空则使用该 Provider 的官方地址。必须是 https，不接受内网地址。', 'opentranslation' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'Leave empty to use the official endpoint of this provider. Must be https; internal addresses are rejected.', 'opentranslation' ); ?></p>
                 </td>
             </tr>
             <tr>
@@ -45,7 +45,7 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
                 <td>
                     <div id="ot-model-field-wrapper" style="display:flex;gap:8px;align-items:center;">
                         <input type="text" id="ot-model-input" name="model" class="regular-text" value="gpt-4o" />
-                        <button type="button" id="ot-fetch-models-btn" class="button"><?php esc_html_e( '获取模型列表', 'opentranslation' ); ?></button>
+                        <button type="button" id="ot-fetch-models-btn" class="button"><?php esc_html_e( 'Fetch Models', 'opentranslation' ); ?></button>
                     </div>
                     <p id="ot-model-message" class="description" style="display:none;margin-top:6px;"></p>
                 </td>
@@ -54,21 +54,21 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
                 <th><?php esc_html_e( 'Priority', 'opentranslation' ); ?></th>
                 <td>
                     <input type="number" name="priority" value="10" />
-                    <p class="description"><?php esc_html_e( '数字越小优先级越高。主模型失败后，会按优先级顺序自动降级到备用模型。每个模型应设置不同的优先级。', 'opentranslation' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'Lower numbers mean higher priority. When the primary model fails, the plugin falls back to the next model by priority. Each model should have a distinct priority.', 'opentranslation' ); ?></p>
                 </td>
             </tr>
             <tr>
                 <th><?php esc_html_e( 'Temperature', 'opentranslation' ); ?></th>
                 <td>
                     <input type="number" step="0.1" min="0" max="2" name="temperature" value="0.3" />
-                    <p class="description"><?php esc_html_e( '控制翻译结果的随机性，有效范围 0-2。0 最稳定、最保守；1 以上更具创造性，但可能导致翻译不一致。建议 0.1~0.5。', 'opentranslation' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'Controls randomness of the output, valid range 0-2. 0 is the most stable and conservative; above 1 is more creative but may cause inconsistent translations. 0.1 to 0.5 is recommended.', 'opentranslation' ); ?></p>
                 </td>
             </tr>
             <tr>
                 <th><?php esc_html_e( 'Max Tokens (0 = auto)', 'opentranslation' ); ?></th>
                 <td>
                     <input type="number" min="0" name="max_tokens" value="0" />
-                    <p class="description"><?php esc_html_e( '单次 API 请求最多返回的 Token 数。0 表示由模型自动决定；Anthropic 因 API 限制会在填 0 时自动使用 4096。', 'opentranslation' ); ?></p>
+                    <p class="description"><?php esc_html_e( 'Maximum tokens returned per API request. 0 lets the model decide; for Anthropic, 0 falls back to 4096 because of an API requirement.', 'opentranslation' ); ?></p>
                 </td>
             </tr>
         </table>
@@ -86,7 +86,7 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
             <p><?php
                 printf(
                     /* translators: %s is a comma-separated list of duplicated priority values. */
-                    esc_html__( '优先级重复：%s。降级顺序将不可预期，建议为每个模型设置不同的优先级。', 'opentranslation' ),
+                    esc_html__( 'Duplicate priority: %s. The fallback order becomes unpredictable; give each model a distinct priority.', 'opentranslation' ),
                     esc_html( implode( ', ', $duplicated ) )
                 );
             ?></p>
@@ -94,7 +94,7 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
     <?php endif; ?>
 
     <?php if ( isset( $_GET['message'] ) && 'circuit_reset' === sanitize_text_field( wp_unslash( $_GET['message'] ) ) ) : ?>
-        <div class="notice notice-success"><p><?php esc_html_e( '模型熔断状态已重置。', 'opentranslation' ); ?></p></div>
+        <div class="notice notice-success"><p><?php esc_html_e( 'Model circuit state has been reset.', 'opentranslation' ); ?></p></div>
     <?php endif; ?>
 
     <table class="wp-list-table widefat fixed striped">
@@ -149,22 +149,22 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
                                 /* translators: %d is the remaining seconds. */
                                 printf(
                                     '<span style="color:#d63638;"><strong>&#9888; %s</strong>（剩余 %d 秒）</span>',
-                                    esc_html__( '熔断中', 'opentranslation' ),
+                                    esc_html__( 'Circuit open', 'opentranslation' ),
                                     (int) $h_remaining
                                 );
                             elseif ( $h_open > 0 && ! empty( $hstate['half_open'] ) ) :
-                                echo '<span>&#9684; ' . esc_html__( '半开探测', 'opentranslation' ) . '</span>';
+                                echo '<span>&#9684; ' . esc_html__( 'Half-open probe', 'opentranslation' ) . '</span>';
                             elseif ( $h_consec > 0 ) :
                                 printf(
                                     '<span style="color:#dba617;">&#9888; %s</span>',
                                     sprintf(
                                         /* translators: %d is the consecutive failure count. */
-                                        esc_html__( '连续失败 %d', 'opentranslation' ),
+                                        esc_html__( '%d consecutive failures', 'opentranslation' ),
                                         (int) $h_consec
                                     )
                                 );
                             else :
-                                echo '<span style="color:#00a32a;">&#10003; ' . esc_html__( '正常', 'opentranslation' ) . '</span>';
+                                echo '<span style="color:#00a32a;">&#10003; ' . esc_html__( 'Healthy', 'opentranslation' ) . '</span>';
                             endif;
                             ?>
                             <br />
@@ -172,7 +172,7 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
                                 <?php
                                 printf(
                                     /* translators: 1: total successes, 2: total failures. */
-                                    esc_html__( '成功 %1$d / 失败 %2$d', 'opentranslation' ),
+                                    esc_html__( '%1$d succeeded / %2$d failed', 'opentranslation' ),
                                     (int) $hstate['total_success'],
                                     (int) $hstate['total_failure']
                                 );
@@ -184,7 +184,7 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
                             <?php if ( $h_open > 0 ) : ?>
                                 <br />
                                 <a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=opentranslation_reset_circuit&key=' . $model_key . '&from=opentranslation-models' ), 'opentranslation_reset_circuit' ) ); ?>">
-                                    <?php esc_html_e( '重置', 'opentranslation' ); ?>
+                                    <?php esc_html_e( 'Reset', 'opentranslation' ); ?>
                                 </a>
                             <?php endif; ?>
                         </td>
@@ -199,7 +199,7 @@ $duplicated = array_keys( array_filter( array_count_values( $priorities ), funct
                                 data-max-tokens="<?php echo esc_attr( $model['max_tokens'] ?? 0 ); ?>">
                                 <?php esc_html_e( 'Edit', 'opentranslation' ); ?>
                             </button>
-                            <button type="button" class="button button-small ot-test-model-btn" data-index="<?php echo esc_attr( $index ); ?>"><?php esc_html_e( '测试', 'opentranslation' ); ?></button>
+                            <button type="button" class="button button-small ot-test-model-btn" data-index="<?php echo esc_attr( $index ); ?>"><?php esc_html_e( 'Test', 'opentranslation' ); ?></button>
                             <form method="post" style="display:inline;">
                                 <?php wp_nonce_field( 'opentranslation_models_action', 'opentranslation_models_nonce' ); ?>
                                 <input type="hidden" name="model_index" value="<?php echo esc_attr( $index ); ?>" />

@@ -15,13 +15,13 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
     ?>
 
     <?php if ( 'queued' === $message ) : ?>
-        <div class="notice notice-success"><p><?php esc_html_e( '队列已触发。任务在后台异步执行，稍后刷新本页可在「Last Run」看到执行统计。', 'opentranslation' ); ?></p></div>
+        <div class="notice notice-success"><p><?php esc_html_e( 'Queue triggered. The job runs asynchronously in the background; refresh this page later to see the stats under "Last Run".', 'opentranslation' ); ?></p></div>
     <?php elseif ( 'retried' === $message ) : ?>
         <div class="notice notice-success"><p><?php esc_html_e( 'Failed items reset and queue triggered.', 'opentranslation' ); ?></p></div>
     <?php elseif ( 'toggled' === $message ) : ?>
         <div class="notice notice-success"><p><?php esc_html_e( 'Language status updated.', 'opentranslation' ); ?></p></div>
     <?php elseif ( 'circuit_reset' === $message ) : ?>
-        <div class="notice notice-success"><p><?php esc_html_e( '模型熔断状态已重置。', 'opentranslation' ); ?></p></div>
+        <div class="notice notice-success"><p><?php esc_html_e( 'Model circuit state has been reset.', 'opentranslation' ); ?></p></div>
     <?php endif; ?>
 
     <?php
@@ -47,9 +47,9 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
         <?php if ( $circuit_all ) : ?>
             <div class="notice notice-error">
                 <p>
-                    <strong><?php esc_html_e( '所有模型均已熔断，队列已暂停。', 'opentranslation' ); ?></strong>
-                    <?php esc_html_e( '请检查模型配置或手动重置。', 'opentranslation' ); ?>
-                    <a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=opentranslation_reset_circuit&key=all&from=opentranslation-queue' ), 'opentranslation_reset_circuit' ) ); ?>"><?php esc_html_e( '重置全部', 'opentranslation' ); ?></a>
+                    <strong><?php esc_html_e( 'All models are circuit-open; the queue is paused.', 'opentranslation' ); ?></strong>
+                    <?php esc_html_e( 'Check the model configuration or reset manually.', 'opentranslation' ); ?>
+                    <a class="button button-small" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=opentranslation_reset_circuit&key=all&from=opentranslation-queue' ), 'opentranslation_reset_circuit' ) ); ?>"><?php esc_html_e( 'Reset all', 'opentranslation' ); ?></a>
                 </p>
             </div>
         <?php else : ?>
@@ -57,7 +57,7 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
                 <p><?php
                     printf(
                         /* translators: %s is the comma-separated list of circuit-open model labels with remaining seconds. */
-                        esc_html__( '以下模型处于熔断中：%s', 'opentranslation' ),
+                        esc_html__( 'The following models are circuit-open: %s', 'opentranslation' ),
                         esc_html( implode( '; ', array_map( function ( $mo ) {
                             return $mo['label'] . '（剩余 ' . (int) $mo['remaining'] . ' 秒）';
                         }, $circuit_open_list ) ) )
@@ -68,7 +68,7 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
     <?php endif; ?>
 
     <h2><?php esc_html_e( 'Cache Overview', 'opentranslation' ); ?></h2>
-    <p class="description"><?php esc_html_e( '以下为 OpenTranslation 缓存表的全局统计（所有语言合计），不等于 TranslatePress 字典表的未翻译量。按语言明细见下方表格。', 'opentranslation' ); ?></p>
+    <p class="description"><?php esc_html_e( 'The figures below are global counts from the OpenTranslation cache table (all languages combined); they are not the untranslated count of the TranslatePress dictionary tables. See the per-language table below.', 'opentranslation' ); ?></p>
     <ul>
         <li><strong><?php esc_html_e( 'Pending', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $counts['pending'] ?? 0 ); ?></li>
         <li><strong><?php esc_html_e( 'Translated', 'opentranslation' ); ?>:</strong> <?php echo esc_html( $counts['translated'] ?? 0 ); ?></li>
@@ -102,7 +102,7 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
     <?php if ( ! empty( $last_run ) ) : ?>
         <h2><?php esc_html_e( 'Last Run', 'opentranslation' ); ?></h2>
         <?php if ( ! empty( $last_run['circuit_open'] ) ) : ?>
-            <div class="notice notice-error"><p><?php esc_html_e( '本轮因所有模型熔断而跳过。', 'opentranslation' ); ?></p></div>
+            <div class="notice notice-error"><p><?php esc_html_e( 'This round was skipped because all models are circuit-open.', 'opentranslation' ); ?></p></div>
         <?php endif; ?>
         <ul>
             <li><strong><?php esc_html_e( 'Finished', 'opentranslation' ); ?>:</strong>
@@ -218,14 +218,14 @@ $message = isset( $_GET['message'] ) ? sanitize_text_field( wp_unslash( $_GET['m
             <?php
             printf(
                 /* translators: %d is the total number of log rows. */
-                esc_html__( '共 %d 条', 'opentranslation' ),
+                esc_html__( '%d entries in total', 'opentranslation' ),
                 (int) $log_total
             );
             ?>
             <?php if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) : ?>
-                — <?php esc_html_e( 'debug 级日志（如调度心跳）当前不记录，开启 WP_DEBUG 后才会入库。', 'opentranslation' ); ?>
+                — <?php esc_html_e( 'Debug level entries (such as the scheduler heartbeat) are not recorded unless WP_DEBUG is enabled.', 'opentranslation' ); ?>
             <?php endif; ?>
-            — <?php esc_html_e( '日志默认保留 30 天。', 'opentranslation' ); ?>
+            — <?php esc_html_e( 'Logs are kept for 30 days by default.', 'opentranslation' ); ?>
         </span>
     </form>
 

@@ -132,17 +132,17 @@ class Admin_Transfer {
      */
     private function read_upload() {
         if ( empty( $_FILES['config'] ) || ! is_array( $_FILES['config'] ) ) {
-            return new \WP_Error( 'no_file', __( '未选择文件。', 'opentranslation' ) );
+            return new \WP_Error( 'no_file', __( 'No file selected.', 'opentranslation' ) );
         }
 
         $file = $_FILES['config'];
         if ( ! empty( $file['error'] ) || empty( $file['tmp_name'] ) ) {
-            return new \WP_Error( 'upload_failed', __( '文件上传失败。', 'opentranslation' ) );
+            return new \WP_Error( 'upload_failed', __( 'File upload failed.', 'opentranslation' ) );
         }
 
         // 防止把任意本地路径当成上传文件读取
         if ( ! is_uploaded_file( $file['tmp_name'] ) ) {
-            return new \WP_Error( 'upload_failed', __( '文件上传失败。', 'opentranslation' ) );
+            return new \WP_Error( 'upload_failed', __( 'File upload failed.', 'opentranslation' ) );
         }
 
         return (string) file_get_contents( $file['tmp_name'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions
@@ -190,15 +190,15 @@ class Admin_Transfer {
         $raw = (string) $raw;
 
         if ( strlen( $raw ) > self::MAX_UPLOAD_BYTES ) {
-            return new \WP_Error( 'too_large', __( '文件超过 1 MB，不像是配置文件。', 'opentranslation' ) );
+            return new \WP_Error( 'too_large', __( 'File exceeds 1 MB; it does not look like a config file.', 'opentranslation' ) );
         }
         if ( '' === trim( $raw ) ) {
-            return new \WP_Error( 'invalid_json', __( '文件内容为空。', 'opentranslation' ) );
+            return new \WP_Error( 'invalid_json', __( 'File content is empty.', 'opentranslation' ) );
         }
 
         $data = json_decode( $raw, true );
         if ( ! is_array( $data ) ) {
-            return new \WP_Error( 'invalid_json', __( '文件不是合法的 JSON 对象。', 'opentranslation' ) );
+            return new \WP_Error( 'invalid_json', __( 'File is not a valid JSON object.', 'opentranslation' ) );
         }
 
         return $data;
@@ -258,11 +258,11 @@ class Admin_Transfer {
      */
     private static function notice( $message ) {
         $map = array(
-            'imported'      => array( __( '配置已导入。', 'opentranslation' ), 'success' ),
-            'cancelled'     => array( __( '已取消导入，未做任何改动。', 'opentranslation' ), 'info' ),
-            'expired'       => array( __( '预览已过期或不存在，请重新上传配置文件。', 'opentranslation' ), 'error' ),
-            'no_file'       => array( __( '未选择文件。', 'opentranslation' ), 'error' ),
-            'upload_failed' => array( __( '文件上传失败，请重试。', 'opentranslation' ), 'error' ),
+            'imported'      => array( __( 'Configuration imported.', 'opentranslation' ), 'success' ),
+            'cancelled'     => array( __( 'Import cancelled; nothing was changed.', 'opentranslation' ), 'info' ),
+            'expired'       => array( __( 'The preview has expired or does not exist. Please upload the config file again.', 'opentranslation' ), 'error' ),
+            'no_file'       => array( __( 'No file selected.', 'opentranslation' ), 'error' ),
+            'upload_failed' => array( __( 'File upload failed. Please try again.', 'opentranslation' ), 'error' ),
         );
 
         if ( ! isset( $map[ $message ] ) ) {

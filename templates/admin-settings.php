@@ -50,7 +50,7 @@ $plugin_language = $settings['plugin_language'] ?? 'zh_CN';
         </table>
 
         <h2><?php esc_html_e( 'Translation Scope', 'opentranslation' ); ?></h2>
-        <p class="description"><?php esc_html_e( '按内容归属选择翻译范围。归属来自 TranslatePress 在页面渲染时记录的文章关联；『未关联文章』表示 TP 尚未记录归属的字符串（菜单、页脚、主题文案等，也包括尚未被访问过的页面内容）。『仅已发布』只对已关联文章的条目生效。', 'opentranslation' ); ?></p>
+        <p class="description"><?php esc_html_e( 'Choose the translation scope by content ownership. Ownership comes from the post association TranslatePress records while rendering pages. "Not linked to a post" means TP has not recorded an owner for the string yet (menus, footers, theme copy, and content on pages nobody has visited). "Published only" applies to entries linked to a post.', 'opentranslation' ); ?></p>
 
         <?php if ( empty( $languages ) ) : ?>
             <p><?php esc_html_e( 'No target languages configured in TranslatePress.', 'opentranslation' ); ?></p>
@@ -66,9 +66,9 @@ $plugin_language = $settings['plugin_language'] ?? 'zh_CN';
                     <tr>
                         <th><?php esc_html_e( 'Mode', 'opentranslation' ); ?></th>
                         <td>
-                            <label><input type="radio" name="<?php echo esc_attr( $ot_field ); ?>[mode]" value="all" <?php checked( $ot_cfg['mode'], 'all' ); ?> /> <?php esc_html_e( '全部', 'opentranslation' ); ?></label>
-                            <label style="margin-left:12px;"><input type="radio" name="<?php echo esc_attr( $ot_field ); ?>[mode]" value="include" <?php checked( $ot_cfg['mode'], 'include' ); ?> /> <?php esc_html_e( '仅包含', 'opentranslation' ); ?></label>
-                            <label style="margin-left:12px;"><input type="radio" name="<?php echo esc_attr( $ot_field ); ?>[mode]" value="exclude" <?php checked( $ot_cfg['mode'], 'exclude' ); ?> /> <?php esc_html_e( '排除', 'opentranslation' ); ?></label>
+                            <label><input type="radio" name="<?php echo esc_attr( $ot_field ); ?>[mode]" value="all" <?php checked( $ot_cfg['mode'], 'all' ); ?> /> <?php esc_html_e( 'All', 'opentranslation' ); ?></label>
+                            <label style="margin-left:12px;"><input type="radio" name="<?php echo esc_attr( $ot_field ); ?>[mode]" value="include" <?php checked( $ot_cfg['mode'], 'include' ); ?> /> <?php esc_html_e( 'Include only', 'opentranslation' ); ?></label>
+                            <label style="margin-left:12px;"><input type="radio" name="<?php echo esc_attr( $ot_field ); ?>[mode]" value="exclude" <?php checked( $ot_cfg['mode'], 'exclude' ); ?> /> <?php esc_html_e( 'Exclude', 'opentranslation' ); ?></label>
                         </td>
                     </tr>
                     <tr>
@@ -76,11 +76,11 @@ $plugin_language = $settings['plugin_language'] ?? 'zh_CN';
                         <td>
                             <?php
                             if ( empty( $ot_dist ) ) :
-                                echo '<p class="description">' . esc_html__( '暂无归属数据。', 'opentranslation' ) . '</p>';
+                                echo '<p class="description">' . esc_html__( 'No ownership data yet.', 'opentranslation' ) . '</p>';
                             else :
                                 foreach ( $ot_dist as $ot_bucket => $ot_stats ) :
                                     $ot_label = \OpenTranslation\Scope::UNLINKED === $ot_bucket
-                                        ? __( '未关联文章', 'opentranslation' )
+                                        ? __( 'Not linked to a post', 'opentranslation' )
                                         : $ot_bucket;
                                     ?>
                                     <label style="display:block;margin-bottom:4px;">
@@ -93,7 +93,7 @@ $plugin_language = $settings['plugin_language'] ?? 'zh_CN';
                                             (<?php
                                             printf(
                                                 /* translators: 1: total count, 2: untranslated count. */
-                                                esc_html__( '总 %1$d / 未译 %2$d', 'opentranslation' ),
+                                                esc_html__( '%1$d total / %2$d untranslated', 'opentranslation' ),
                                                 (int) $ot_stats['total'],
                                                 (int) $ot_stats['untranslated']
                                             );
@@ -113,7 +113,7 @@ $plugin_language = $settings['plugin_language'] ?? 'zh_CN';
                                     value="1"
                                     <?php checked( ! empty( $ot_cfg['published_only'] ) ); ?>
                                     <?php disabled( 'exclude' === $ot_cfg['mode'] ); ?> />
-                                <?php esc_html_e( '仅翻译已发布文章关联的内容（排除模式不支持）', 'opentranslation' ); ?>
+                                <?php esc_html_e( 'Only translate content linked to published posts (not supported in exclude mode)', 'opentranslation' ); ?>
                             </label>
                         </td>
                     </tr>
