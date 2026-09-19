@@ -162,6 +162,9 @@ class Admin {
         $log_page     = isset( $_GET['log_page'] ) ? max( 1, absint( $_GET['log_page'] ) ) : 1;
         $log_per_page = 50;
 
+        // $log_actions 供 templates/admin-queue.php 渲染筛选下拉
+        $log_actions = Log::get_actions();
+
         // 白名单净化：不在已知动作列表内一律置空，见 Log::sanitize_action
         $log_action = Log::sanitize_action( $log_action );
 
@@ -172,6 +175,9 @@ class Admin {
     }
 
     public function render_failures_page() {
+        // $languages 供 templates/admin-failures.php 渲染语言筛选
+        $languages = TP_Storage_Adapter::get_target_languages();
+
         $language = isset( $_GET['lang'] ) ? sanitize_text_field( wp_unslash( $_GET['lang'] ) ) : '';
 
         // 白名单净化：不在目标语言列表内一律置空，见 TP_Storage_Adapter::sanitize_language
