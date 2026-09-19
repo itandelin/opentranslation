@@ -162,8 +162,8 @@ msgstr "区分大小写"
 msgid "Check the model configuration or reset manually."
 msgstr "请检查模型配置或手动重置。"
 
-msgid "Choose the translation scope by content ownership. Ownership comes from the post association TranslatePress records while rendering pages. \"Not linked to a post\" means TP has not recorded an owner for the string yet (menus, footers, theme copy, and content on pages nobody has visited). \"Published only\" applies to entries linked to a post."
-msgstr "按内容归属选择翻译范围。归属来自 TranslatePress 在页面渲染时记录的文章关联；『未关联文章』表示 TP 尚未记录归属的字符串（菜单、页脚、主题文案等，也包括尚未被访问过的页面内容）。『仅已发布』只对已关联文章的条目生效。"
+msgid "Choose the translation scope by content ownership. Ownership comes from the post association TranslatePress records while rendering pages. \"Not linked to a post\" means TP has not recorded an owner for the string yet (menus, footers, theme copy, and content on pages nobody has visited)."
+msgstr "按内容归属选择翻译范围。归属来自 TranslatePress 在页面渲染时记录的文章关联；『未关联文章』表示 TP 尚未记录归属的字符串（菜单、页脚、主题文案等，也包括尚未被访问过的页面内容）。"
 
 msgid "Circuit open"
 msgstr "熔断中"
@@ -510,9 +510,6 @@ msgstr "备注"
 msgid "Only applies when WP-Cron drives the queue. If Action Scheduler is available (for example bundled with WooCommerce), the queue runs on a fixed 1-minute interval and this setting is ignored. See Queue Runner on the Queue & Logs page for the actual driver in use."
 msgstr "仅在由 WP-Cron 驱动队列时生效。若 Action Scheduler 可用（例如随 WooCommerce 一起安装），队列会按固定的 1 分钟间隔执行，本设置被忽略。实际驱动方式见「队列与日志」页的队列驱动。"
 
-msgid "Only translate content linked to published posts (not supported in exclude mode)"
-msgstr "仅翻译已发布文章关联的内容（排除模式不支持）"
-
 msgid "OpenAI"
 msgstr "OpenAI"
 
@@ -566,9 +563,6 @@ msgstr "提示 Token"
 
 msgid "Provider"
 msgstr "提供商"
-
-msgid "Published only"
-msgstr "仅已发布"
 
 msgid "Queue & Logs"
 msgstr "队列与日志"
@@ -815,3 +809,10 @@ msgstr "默认"
 
 msgid "not set"
 msgstr "未设置"
+
+msgid "Linked entries: only translate those attached to published posts"
+msgstr "已关联文章的条目：只翻译 publish 状态的"
+
+msgid "Applies to include mode only. The \"Not linked to a post\" bucket is never affected by this option."
+msgstr "仅在「仅包含」模式下生效。「未关联文章」桶不受本选项影响。"
+

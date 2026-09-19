@@ -50,7 +50,7 @@ $plugin_language = $settings['plugin_language'] ?? 'zh_CN';
         </table>
 
         <h2><?php esc_html_e( 'Translation Scope', 'opentranslation' ); ?></h2>
-        <p class="description"><?php esc_html_e( 'Choose the translation scope by content ownership. Ownership comes from the post association TranslatePress records while rendering pages. "Not linked to a post" means TP has not recorded an owner for the string yet (menus, footers, theme copy, and content on pages nobody has visited). "Published only" applies to entries linked to a post.', 'opentranslation' ); ?></p>
+        <p class="description"><?php esc_html_e( 'Choose the translation scope by content ownership. Ownership comes from the post association TranslatePress records while rendering pages. "Not linked to a post" means TP has not recorded an owner for the string yet (menus, footers, theme copy, and content on pages nobody has visited).', 'opentranslation' ); ?></p>
 
         <?php if ( empty( $languages ) ) : ?>
             <p><?php esc_html_e( 'No target languages configured in TranslatePress.', 'opentranslation' ); ?></p>
@@ -102,19 +102,16 @@ $plugin_language = $settings['plugin_language'] ?? 'zh_CN';
                                     </label>
                                 <?php endforeach; ?>
                             <?php endif; ?>
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><?php esc_html_e( 'Published only', 'opentranslation' ); ?></th>
-                        <td>
-                            <label>
+
+                            <label style="display:block;margin-top:8px;padding-top:8px;border-top:1px solid #dcdcde;">
                                 <input type="checkbox"
                                     name="<?php echo esc_attr( $ot_field ); ?>[published_only]"
                                     value="1"
                                     <?php checked( ! empty( $ot_cfg['published_only'] ) ); ?>
                                     <?php disabled( 'exclude' === $ot_cfg['mode'] ); ?> />
-                                <?php esc_html_e( 'Only translate content linked to published posts (not supported in exclude mode)', 'opentranslation' ); ?>
+                                <?php esc_html_e( 'Linked entries: only translate those attached to published posts', 'opentranslation' ); ?>
                             </label>
+                            <p class="description"><?php esc_html_e( 'Applies to include mode only. The "Not linked to a post" bucket is never affected by this option.', 'opentranslation' ); ?></p>
                         </td>
                     </tr>
                 </table>
