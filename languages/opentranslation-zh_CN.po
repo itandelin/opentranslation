@@ -1,172 +1,817 @@
+# Simplified Chinese translation for OpenTranslation.
+# 源码 msgid 全部为英文，本文件提供简体中文译文。
 msgid ""
 msgstr ""
-"Project-Id-Version: OpenTranslation 1.0.0\n"
+"Project-Id-Version: OpenTranslation\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-16 00:00+0000\n"
-"PO-Revision-Date: 2026-04-16 00:00+0000\n"
-"Last-Translator: \n"
-"Language-Team: Chinese\n"
+"Last-Translator: OpenTranslation\n"
+"Language-Team: Simplified Chinese\n"
+"POT-Creation-Date: 2026-09-19 08:31+0000\n"
+"PO-Revision-Date: 2026-09-19 08:31+0000\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
+"X-Domain: opentranslation\n"
 
-msgid "OpenTranslation"
-msgstr "OpenTranslation"
+msgid "%1$d succeeded / %2$d failed"
+msgstr "成功 %1$d / 失败 %2$d"
 
-msgid "Settings"
-msgstr "设置"
+msgid "%1$d total / %2$d untranslated"
+msgstr "总 %1$d / 未译 %2$d"
 
-msgid "Models"
-msgstr "模型配置"
+msgid "%d consecutive failures"
+msgstr "连续失败 %d"
 
-msgid "Queue & Logs"
-msgstr "队列与日志"
+msgid "%d entries in total"
+msgstr "共 %d 条"
 
-msgid "Unauthorized."
-msgstr "未授权。"
+msgid "%s ago"
+msgstr "%s前"
 
-msgid "Batch Size"
-msgstr "批次大小"
+msgid "%s from now"
+msgstr "%s后"
 
-msgid "Cron Interval (minutes)"
-msgstr "定时任务间隔（分钟）"
+msgid "%s: no translatable entries under the current translation scope."
+msgstr "%s：当前翻译范围下没有可翻译条目。"
 
-msgid "Rate Limit (requests/min)"
-msgstr "速率限制（请求/分钟）"
+msgid "%s: nothing selected; fell back to all content."
+msgstr "%s：未选择任何内容，已回落为全部。"
 
-msgid "System Prompt"
-msgstr "系统提示词"
+msgid "(only models with pricing configured)"
+msgstr "（仅含已配置单价的模型）"
 
-msgid "Add Model"
-msgstr "添加模型"
-
-msgid "Provider"
-msgstr "提供商"
-
-msgid "OpenAI"
-msgstr "OpenAI"
-
-msgid "Anthropic"
-msgstr "Anthropic"
+msgid "A preview is shown after upload and nothing is written until you confirm. For files without keys, existing keys on this site are reused by model identity."
+msgstr "上传后先展示预览，确认后才写入。不含密钥的文件会按模型标识沿用本站已有密钥。"
 
 msgid "API Key"
 msgstr "API 密钥"
 
-msgid "Base URL (optional)"
-msgstr "基础 URL（可选）"
+msgid "API Key or Model is empty."
+msgstr "API Key 或模型为空。"
 
-msgid "Model"
-msgstr "模型"
-
-msgid "Priority"
-msgstr "优先级"
-
-msgid "Temperature"
-msgstr "温度"
-
-msgid "Max Tokens (0 = auto)"
-msgstr "最大 Token 数（0 = 自动）"
-
-msgid "Configured Models"
-msgstr "已配置模型"
-
-msgid "Actions"
-msgstr "操作"
-
-msgid "Delete"
-msgstr "删除"
-
-msgid "No models configured."
-msgstr "尚未配置模型。"
-
-msgid "Queue Status"
-msgstr "队列状态"
-
-msgid "Pending"
-msgstr "待处理"
-
-msgid "Translated"
-msgstr "已翻译"
-
-msgid "Failed"
-msgstr "失败"
-
-msgid "Run Queue Now"
-msgstr "立即运行队列"
-
-msgid "Retry Failed"
-msgstr "重试失败项"
-
-msgid "Languages"
-msgstr "语言"
-
-msgid "Status"
-msgstr "状态"
-
-msgid "Paused"
-msgstr "已暂停"
-
-msgid "Active"
-msgstr "运行中"
-
-msgid "Resume"
-msgstr "恢复"
-
-msgid "Pause"
-msgstr "暂停"
-
-msgid "Recent Logs"
-msgstr "最近日志"
-
-msgid "Time"
-msgstr "时间"
+msgid "API request units"
+msgstr "API 请求单位"
 
 msgid "Action"
 msgstr "动作"
 
-msgid "Cache Key"
-msgstr "缓存键"
+msgid "Action Scheduler"
+msgstr "Action Scheduler"
 
-msgid "Message"
-msgstr "消息"
+msgid "Actions"
+msgstr "操作"
 
-msgid "No logs found."
-msgstr "暂无日志。"
+msgid "Active"
+msgstr "运行中"
 
-msgid "Queue triggered."
-msgstr "队列已触发。"
+msgid "Add Model"
+msgstr "添加模型"
 
-msgid "Failed items reset and queue triggered."
-msgstr "失败项已重置，队列已触发。"
+msgid "Add Term"
+msgstr "添加术语"
 
-msgid "Language status updated."
-msgstr "语言状态已更新。"
+msgid "All"
+msgstr "全部"
 
-msgid "Every %d minutes"
-msgstr "每 %d 分钟"
+msgid "All actions"
+msgstr "全部动作"
 
-msgid "OpenAI returned empty content."
-msgstr "OpenAI 返回空内容。"
+msgid "All configured models are circuit-open; skipping."
+msgstr "所有已配置模型均处于熔断中，跳过。"
+
+msgid "All configured models failed the connection test."
+msgstr "所有已配置模型的连接测试均失败。"
+
+msgid "All languages"
+msgstr "全部语言"
+
+msgid "All models are circuit-open; the queue is paused."
+msgstr "所有模型均已熔断，队列已暂停。"
+
+msgid "All models circuit-open."
+msgstr "所有模型均已熔断。"
+
+msgid "All models circuit-open; round skipped."
+msgstr "所有模型均已熔断，本轮跳过。"
+
+msgid "Anthropic"
+msgstr "Anthropic"
+
+msgid "Anthropic endpoint returned HTTP %d."
+msgstr "Anthropic 接口返回 HTTP %d。"
+
+msgid "Anthropic request failed before dispatch."
+msgstr "Anthropic 请求在发出前就失败了。"
 
 msgid "Anthropic returned empty content."
 msgstr "Anthropic 返回空内容。"
 
+msgid "Back"
+msgstr "返回"
+
+msgid "Base URL"
+msgstr "Base URL"
+
+msgid "Base URL (optional)"
+msgstr "基础 URL（可选）"
+
+msgid "Base URL is empty."
+msgstr "Base URL 为空。"
+
+msgid "Base URL must be an absolute URL with scheme and host."
+msgstr "Base URL 必须是含协议与主机的完整地址。"
+
+msgid "Batch Size"
+msgstr "批次大小"
+
+msgid "Buckets"
+msgstr "归属桶"
+
+msgid "By Model (last %d days)"
+msgstr "按模型（近 %d 天）"
+
+msgid "By language"
+msgstr "按语言"
+
+msgid "Cache Failed"
+msgstr "缓存失败"
+
+msgid "Cache Key"
+msgstr "缓存键"
+
+msgid "Cache Overview"
+msgstr "缓存概览"
+
+msgid "Cache Pending"
+msgstr "缓存待处理"
+
+msgid "Cache Translated"
+msgstr "缓存已翻译"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Case"
+msgstr "大小写"
+
+msgid "Case sensitive"
+msgstr "区分大小写"
+
+msgid "Check the model configuration or reset manually."
+msgstr "请检查模型配置或手动重置。"
+
+msgid "Choose the translation scope by content ownership. Ownership comes from the post association TranslatePress records while rendering pages. \"Not linked to a post\" means TP has not recorded an owner for the string yet (menus, footers, theme copy, and content on pages nobody has visited). \"Published only\" applies to entries linked to a post."
+msgstr "按内容归属选择翻译范围。归属来自 TranslatePress 在页面渲染时记录的文章关联；『未关联文章』表示 TP 尚未记录归属的字符串（菜单、页脚、主题文案等，也包括尚未被访问过的页面内容）。『仅已发布』只对已关联文章的条目生效。"
+
+msgid "Circuit open"
+msgstr "熔断中"
+
+msgid "Completion"
+msgstr "生成"
+
+msgid "Completion / 1K"
+msgstr "生成 / 千 Token"
+
+msgid "Completion tokens"
+msgstr "生成 Token"
+
+msgid "Configuration imported."
+msgstr "配置已导入。"
+
+msgid "Configured Models"
+msgstr "已配置模型"
+
+msgid "Configured Terms"
+msgstr "已配置术语"
+
+msgid "Confirm import"
+msgstr "确认导入"
+
+msgid "Connection failed"
+msgstr "连接失败"
+
+msgid "Connection successful"
+msgstr "连接成功"
+
+msgid "Connection successful."
+msgstr "连接成功。"
+
+msgid "Controls randomness of the output, valid range 0-2. 0 is the most stable and conservative; above 1 is more creative but may cause inconsistent translations. 0.1 to 0.5 is recommended."
+msgstr "控制翻译结果的随机性，有效范围 0-2。0 最稳定、最保守；1 以上更具创造性，但可能导致翻译不一致。建议 0.1~0.5。"
+
+msgid "Cron Interval (minutes)"
+msgstr "定时任务间隔（分钟）"
+
+msgid "Currency"
+msgstr "货币"
+
+msgid "Daily (last %d days)"
+msgstr "按日（近 %d 天）"
+
+msgid "Date (UTC)"
+msgstr "日期（UTC）"
+
+msgid "Debug level entries (such as the scheduler heartbeat) are not recorded unless WP_DEBUG is enabled."
+msgstr "debug 级日志（如调度心跳）当前不记录，开启 WP_DEBUG 后才会入库。"
+
+msgid "Delete"
+msgstr "删除"
+
+msgid "Duplicate priority: %s. The fallback order becomes unpredictable; give each model a distinct priority."
+msgstr "优先级重复：%s。降级顺序将不可预期，建议为每个模型设置不同的优先级。"
+
+msgid "Edit"
+msgstr "编辑"
+
+msgid "Edit Model"
+msgstr "编辑模型"
+
+msgid "Edit Term"
+msgstr "编辑术语"
+
+msgid "English"
+msgstr "英文"
+
+msgid "Entry"
+msgstr "条目"
+
+msgid "Estimated cost"
+msgstr "估算费用"
+
+msgid "Every %d minutes"
+msgstr "每 %d 分钟"
+
+msgid "Exclude"
+msgstr "排除"
+
+msgid "Export"
+msgstr "导出"
+
+msgid "Export configuration"
+msgstr "导出配置"
+
+msgid "Exported at"
+msgstr "导出时间"
+
+msgid "Exports settings, models, glossary, and translation scope. Paused languages, model health, usage, logs, and cache are not exported because they are runtime state of this site."
+msgstr "导出设置、模型、术语表与翻译范围。不导出暂停语言、模型健康、用量、日志与缓存——这些是本站的运行时状态。"
+
+msgid "Failed"
+msgstr "失败"
+
+msgid "Failed Translations"
+msgstr "翻译失败条目"
+
+msgid "Failed items reset and queue triggered."
+msgstr "失败项已重置，队列已触发。"
+
 msgid "Failed to parse model response as JSON array."
 msgstr "无法将模型响应解析为 JSON 数组。"
+
+msgid "Failures"
+msgstr "失败条目"
+
+msgid "Fetch Models"
+msgstr "获取模型列表"
+
+msgid "Fetch failed. Please check the API Key and Base URL."
+msgstr "获取失败，请检查 API Key 和 Base URL 是否正确。"
+
+msgid "Fetching model list..."
+msgstr "正在获取模型列表..."
+
+msgid "File contains keys"
+msgstr "文件是否含密钥"
+
+msgid "File content is empty."
+msgstr "文件内容为空。"
+
+msgid "File exceeds 1 MB; it does not look like a config file."
+msgstr "文件超过 1 MB，不像是配置文件。"
+
+msgid "File is not a valid JSON object."
+msgstr "文件不是合法的 JSON 对象。"
+
+msgid "File upload failed."
+msgstr "文件上传失败。"
+
+msgid "File upload failed. Please try again."
+msgstr "文件上传失败，请重试。"
+
+msgid "Filter"
+msgstr "筛选"
+
+msgid "Finished"
+msgstr "完成于"
+
+msgid "From cache"
+msgstr "来自缓存"
+
+msgid "From file"
+msgstr "文件提供"
+
+msgid "From model"
+msgstr "来自模型"
+
+msgid "Glossary"
+msgstr "术语表"
+
+msgid "Half-open probe"
+msgstr "半开探测"
+
+msgid "Health"
+msgstr "健康状态"
+
+msgid "Healthy"
+msgstr "正常"
+
+msgid "Host \"%s\" is a private or reserved IP address."
+msgstr "主机 %s 是内网或保留 IP 地址。"
+
+msgid "Host \"%s\" points to a local or reserved address."
+msgstr "主机 %s 指向本地或保留地址。"
+
+msgid "How this is counted: each HTTP attempt counts as one request (including retries and split requests); token counts come from the usage field of the model response; dates are in UTC. Costs are estimates for reference only; the provider invoice is authoritative."
+msgstr "统计口径：每次 HTTP 尝试计 1 次请求（含重试与切块）；token 数来自模型响应的 usage 字段；日期按 UTC。费用为估算值，仅供参考，实际以服务商账单为准。"
+
+msgid "Import"
+msgstr "导入"
+
+msgid "Import / Export"
+msgstr "导入 / 导出"
+
+msgid "Import Preview"
+msgstr "导入预览"
+
+msgid "Import cancelled; nothing was changed."
+msgstr "已取消导入，未做任何改动。"
+
+msgid "Importing overwrites the existing models and glossary. Exporting the current configuration as a backup first is recommended."
+msgstr "导入将覆盖现有模型与术语表，建议先导出当前配置作为备份。"
+
+msgid "Include API Keys"
+msgstr "包含 API Key"
+
+msgid "Include only"
+msgstr "仅包含"
+
+msgid "Internal note, visible in the admin only."
+msgstr "用途备注，仅后台可见。"
+
+msgid "Invalid entry identifier; nothing was changed."
+msgstr "无效的条目标识，未做任何改动。"
+
+msgid "Invalid language code."
+msgstr "语言代码无效。"
+
+msgid "Keep untranslated"
+msgstr "不翻译"
+
+msgid "Language"
+msgstr "语言"
+
+msgid "Language is not in the translatable language list."
+msgstr "语言不在可翻译语言列表中。"
+
+msgid "Language status updated."
+msgstr "语言状态已更新。"
+
+msgid "Languages"
+msgstr "语言"
+
+msgid "Languages with scope config"
+msgstr "含范围配置的语言"
+
+msgid "Last Message"
+msgstr "最后消息"
+
+msgid "Last Run"
+msgstr "上次执行"
+
+msgid "Leave empty to keep the current API Key."
+msgstr "留空表示保持现有 API Key 不变。"
+
+msgid "Leave empty to keep the source text as is. If filled in, the translation always uses this wording."
+msgstr "留空 = 不翻译（与原文保持一致）。填写则译文中该位置固定为这里的内容。"
+
+msgid "Leave empty to use the official endpoint of this provider. Must be https; internal addresses are rejected."
+msgstr "留空则使用该 Provider 的官方地址。必须是 https，不接受内网地址。"
+
+msgid "Level"
+msgstr "级别"
+
+msgid "Logs"
+msgstr "日志"
+
+msgid "Logs are kept for 30 days by default."
+msgstr "日志默认保留 30 天。"
+
+msgid "Lower numbers mean higher priority. When the primary model fails, the plugin falls back to the next model by priority. Each model should have a distinct priority."
+msgstr "数字越小优先级越高。主模型失败后，会按优先级顺序自动降级到备用模型。每个模型应设置不同的优先级。"
+
+msgid "Matching"
+msgstr "匹配方式"
+
+msgid "Max Tokens"
+msgstr "最大 Token 数"
+
+msgid "Max Tokens (0 = auto)"
+msgstr "最大 Token 数（0 = 自动）"
+
+msgid "Maximum items sent to the model per round (1-50). Use 10-20 when the gateway is unstable: a larger batch widens the blast radius of a single failed request."
+msgstr "每轮送交模型的最大条目数（1-50）。网关不稳定时建议用 10-20：批次越大，单次请求失败的影响面越广。"
+
+msgid "Maximum model request units allowed per minute. Note: 0 means no rate limiting at all, which is not recommended because API costs can run away. The limit is shared globally across all models."
+msgstr "每分钟允许的最大模型请求单位数。注意：0 表示完全不限流，不建议这样设置，否则 API 费用可能失控。该限制在所有模型间全局共享。"
+
+msgid "Maximum tokens returned per API request. 0 lets the model decide; for Anthropic, 0 falls back to 4096 because of an API requirement."
+msgstr "单次 API 请求最多返回的 Token 数。0 表示由模型自动决定；Anthropic 因 API 限制会在填 0 时自动使用 4096。"
+
+msgid "Message"
+msgstr "消息"
+
+msgid "Missing, needs manual entry"
+msgstr "缺失，需手动填写"
+
+msgid "Mode"
+msgstr "模式"
+
+msgid "Model"
+msgstr "模型"
+
+msgid "Model circuit state has been reset."
+msgstr "模型熔断状态已重置。"
+
+msgid "Model not found."
+msgstr "未找到该模型。"
 
 msgid "Model response count does not match request count."
 msgstr "模型返回数量与请求数量不匹配。"
 
-msgid "Placeholder validation failed."
-msgstr "占位符验证失败。"
+msgid "Model updated."
+msgstr "模型已更新。"
+
+msgid "Models"
+msgstr "模型"
+
+msgid "Models to import"
+msgstr "将导入的模型"
+
+msgid "Next Run"
+msgstr "下次执行"
+
+msgid "No"
+msgstr "否"
+
+msgid "No failed items."
+msgstr "暂无失败条目。"
+
+msgid "No file selected."
+msgstr "未选择文件。"
+
+msgid "No logs found."
+msgstr "暂无日志。"
+
+msgid "No model list returned. Please enter the model name manually."
+msgstr "未获取到模型列表，请手动输入模型名称。"
+
+msgid "No models configured."
+msgstr "尚未配置模型。"
+
+msgid "No models found."
+msgstr "未找到模型。"
+
+msgid "No ownership data yet."
+msgstr "暂无归属数据。"
+
+msgid "No pricing configured"
+msgstr "未配置单价"
+
+msgid "No target languages configured in TranslatePress."
+msgstr "TranslatePress 中未配置目标语言。"
+
+msgid "No terms configured."
+msgstr "暂无术语。"
+
+msgid "No usage recorded yet."
+msgstr "暂无用量记录。"
+
+msgid "Not linked to a post"
+msgstr "未关联文章"
+
+msgid "Not scheduled"
+msgstr "未排程"
+
+msgid "Note"
+msgstr "备注"
+
+msgid "Only applies when WP-Cron drives the queue. If Action Scheduler is available (for example bundled with WooCommerce), the queue runs on a fixed 1-minute interval and this setting is ignored. See Queue Runner on the Queue & Logs page for the actual driver in use."
+msgstr "仅在由 WP-Cron 驱动队列时生效。若 Action Scheduler 可用（例如随 WooCommerce 一起安装），队列会按固定的 1 分钟间隔执行，本设置被忽略。实际驱动方式见「队列与日志」页的队列驱动。"
+
+msgid "Only translate content linked to published posts (not supported in exclude mode)"
+msgstr "仅翻译已发布文章关联的内容（排除模式不支持）"
+
+msgid "OpenAI"
+msgstr "OpenAI"
+
+msgid "OpenAI request failed before dispatch."
+msgstr "OpenAI 请求在发出前就失败了。"
+
+msgid "OpenAI-compatible endpoint returned HTTP %d."
+msgstr "OpenAI 兼容接口返回 HTTP %d。"
+
+msgid "OpenAI-compatible endpoint returned empty content."
+msgstr "OpenAI 兼容接口返回了空内容。"
+
+msgid "OpenTranslation"
+msgstr "OpenTranslation"
+
+msgid "OpenTranslation:"
+msgstr "OpenTranslation："
+
+msgid "Passthrough"
+msgstr "直通"
+
+msgid "Pause"
+msgstr "暂停"
+
+msgid "Paused"
+msgstr "已暂停"
+
+msgid "Pending"
+msgstr "待处理"
+
+msgid "Please enter an API Key."
+msgstr "请先填写 API Key。"
 
 msgid "Plugin Language"
 msgstr "插件语言"
 
+msgid "Pricing saved."
+msgstr "单价已保存。"
+
+msgid "Priority"
+msgstr "优先级"
+
+msgid "Prompt"
+msgstr "提示"
+
+msgid "Prompt / 1K"
+msgstr "提示 / 千 Token"
+
+msgid "Prompt tokens"
+msgstr "提示 Token"
+
+msgid "Provider"
+msgstr "提供商"
+
+msgid "Published only"
+msgstr "仅已发布"
+
+msgid "Queue & Logs"
+msgstr "队列与日志"
+
+msgid "Queue Runner"
+msgstr "队列驱动"
+
+msgid "Queue triggered. The job runs asynchronously in the background; refresh this page later to see the stats under \"Last Run\"."
+msgstr "队列已触发。任务在后台异步执行，稍后刷新本页可在「Last Run」看到执行统计。"
+
+msgid "Rate Limit (requests/min)"
+msgstr "速率限制（请求/分钟）"
+
+msgid "Reason"
+msgstr "原因"
+
+msgid "Requests"
+msgstr "请求数"
+
+msgid "Reset"
+msgstr "重置"
+
+msgid "Reset all"
+msgstr "重置全部"
+
+msgid "Resume"
+msgstr "恢复"
+
+msgid "Retries"
+msgstr "重试次数"
+
+msgid "Retry"
+msgstr "重试"
+
+msgid "Retry Failed"
+msgstr "重试失败项"
+
+msgid "Reuse existing key on this site"
+msgstr "沿用本站已有密钥"
+
+msgid "Run Queue Now"
+msgstr "立即运行队列"
+
+msgid "Save Pricing"
+msgstr "保存单价"
+
+msgid "Saved model configuration could not be decrypted. This usually means AUTH_KEY in wp-config.php has changed. Please re-enter the model configuration, or restore the original AUTH_KEY."
+msgstr "已保存的模型配置无法解密。这通常意味着 wp-config.php 里的 AUTH_KEY 发生了变化。请重新填写模型配置，或恢复原来的 AUTH_KEY。"
+
+msgid "Scheme \"%s\" is not allowed. Use https."
+msgstr "不允许使用 %s 协议，请改用 https。"
+
+msgid "Settings"
+msgstr "设置项"
+
 msgid "Simplified Chinese"
 msgstr "简体中文"
 
-msgid "English"
-msgstr "英文"
+msgid "Source"
+msgstr "原文"
+
+msgid "Source Text"
+msgstr "原文"
+
+msgid "Source matches TP placeholder pattern."
+msgstr "原文匹配 TranslatePress 的占位符格式。"
+
+msgid "Source must contain at least one letter."
+msgstr "原文至少要含一个字母。"
+
+msgid "Source must not be empty."
+msgstr "原文不能为空。"
+
+msgid "Source must not contain \"protect\"."
+msgstr "原文不能含 protect。"
+
+msgid "Source must not contain &lt; or &gt;."
+msgstr "原文不能含尖括号。"
+
+msgid "Source plugin version"
+msgstr "来源插件版本"
+
+msgid "Source site"
+msgstr "来源站点"
+
+msgid "Source too long (max 100)."
+msgstr "原文过长（上限 100）。"
+
+msgid "Status"
+msgstr "状态"
+
+msgid "System Prompt"
+msgstr "系统提示词"
+
+msgid "TP Untranslated"
+msgstr "TP 未翻译"
+
+msgid "Target"
+msgstr "译法"
+
+msgid "Target matches TP placeholder pattern."
+msgstr "译法匹配 TranslatePress 的占位符格式。"
+
+msgid "Target too long (max 200)."
+msgstr "译法过长（上限 200）。"
+
+msgid "Temp"
+msgstr "温度"
+
+msgid "Temperature"
+msgstr "温度"
+
+msgid "Term added."
+msgstr "术语已添加。"
+
+msgid "Term deleted."
+msgstr "术语已删除。"
+
+msgid "Term updated."
+msgstr "术语已更新。"
+
+msgid "Terms"
+msgstr "术语"
+
+msgid "Terms are replaced with placeholders before the request is sent, so the model never sees the term and the translation always uses the wording you specify. This suits brand names, product models, and proper nouns; it does not suit ordinary words, especially in inflected languages such as Russian. Terms only affect future translations; existing translations are not retranslated automatically."
+msgstr "术语在送交模型前被替换为占位符，模型看不到该词，译文中该位置固定为你指定的译法。适用于品牌名、产品型号、专有名词；不适用于普通词汇，尤其是俄语等有词形变化的语言。术语只影响之后的翻译，已有译文不会自动重翻。"
+
+msgid "Test"
+msgstr "测试"
+
+msgid "Testing..."
+msgstr "正在测试..."
+
+msgid "The admin area is not served over HTTPS, so the API Key will be transmitted in plain text. Enabling HTTPS for the admin area is recommended."
+msgstr "当前后台不是 HTTPS，API Key 将以明文经网络传输。建议为后台启用 HTTPS。"
+
+msgid "The config file format_version is %1$s, but this plugin only supports %2$d."
+msgstr "配置文件 format_version 为 %1$s，当前插件只支持 %2$d。"
+
+msgid "The entry has been reset to pending and will be retried on the next queue run."
+msgstr "该条目已重置为待翻译，将在下次队列执行时重试。"
+
+msgid "The figures below are global counts from the OpenTranslation cache table (all languages combined); they are not the untranslated count of the TranslatePress dictionary tables. See the per-language table below."
+msgstr "以下为 OpenTranslation 缓存表的全局统计（所有语言合计），不等于 TranslatePress 字典表的未翻译量。按语言明细见下方表格。"
+
+msgid "The file contains no importable models."
+msgstr "文件中没有可导入的模型。"
+
+msgid "The file has no format_version and is not a valid OpenTranslation config file."
+msgstr "文件缺少 format_version，不是有效的 OpenTranslation 配置文件。"
+
+msgid "The following models are circuit-open: %s"
+msgstr "以下模型处于熔断中：%s"
+
+msgid "The preview has expired or does not exist. Please upload the config file again."
+msgstr "预览已过期或不存在，请重新上传配置文件。"
+
+msgid "The source word to handle verbatim, such as a brand name or product model. It must not contain angle brackets and must not consist of digits only."
+msgstr "原文中要固定处理的词，例如品牌名或产品型号。不得含尖括号，不得只由数字组成。"
+
+msgid "These entries have reached the maximum retry count (3 by default). The source text stays untranslated until you retry manually or fill in the translation in the TranslatePress editor. Common causes: the model keeps returning malformed output, placeholder validation fails, or the upstream gateway has been unavailable for a long time."
+msgstr "这些条目已达到最大重试次数（默认 3 次）。原文会保持不翻译状态，直到你手动重试，或在 TranslatePress 编辑器中人工填写译文。常见原因：模型持续返回格式错误、占位符校验未通过、上游网关长时间不可用。"
+
+msgid "This Month"
+msgstr "本月"
+
+msgid "This model returned no usage data"
+msgstr "该模型未返回用量数据"
+
+msgid "This round was skipped because all models are circuit-open."
+msgstr "本轮因所有模型熔断而跳过。"
+
+msgid "Time"
+msgstr "时间"
+
+msgid "Total"
+msgstr "合计"
+
+msgid "Total tokens"
+msgstr "Token 合计"
+
+msgid "Translated"
+msgstr "已翻译"
+
+msgid "Translation Scope"
+msgstr "翻译范围"
+
+msgid "Type"
+msgstr "类型"
+
+msgid "Unauthorized."
+msgstr "未授权。"
+
+msgid "Update Model"
+msgstr "更新模型"
+
+msgid "Update Term"
+msgstr "更新术语"
+
+msgid "Updated"
+msgstr "更新于"
+
+msgid "Upload and preview"
+msgstr "上传并预览"
+
+msgid "Upstream service returned HTTP %d."
+msgstr "上游服务返回 HTTP %d。"
+
+msgid "Usage"
+msgstr "用量"
+
+msgid "WP-Cron"
+msgstr "WP-Cron"
+
+msgid "WP-Cron disabled in wp-config.php!"
+msgstr "wp-config.php 中已禁用 WP-Cron！"
+
+msgid "WP-Cron is disabled in wp-config.php. The queue will not run automatically. Please use the \"Run Queue Now\" button or set up a real system cron job."
+msgstr "wp-config.php 中已禁用 WP-Cron，队列不会自动执行。请使用「立即执行队列」按钮，或配置真实的系统 cron 任务。"
+
+msgid "When checked, the exported file contains plain-text keys. Store it safely and delete it after use."
+msgstr "勾选后导出文件将包含明文密钥，请妥善保管，用后删除。"
+
+msgid "Whole word"
+msgstr "全词匹配"
+
+msgid "Whole word only (does not match \"sensor\" inside \"sensors\")"
+msgstr "全词匹配（不命中 sensors 里的 sensor）"
+
+msgid "Will be skipped"
+msgstr "将被跳过"
+
+msgid "Written back"
+msgstr "已写回"
+
+msgid "Yes"
+msgstr "是"
+
+msgid "auto"
+msgstr "自动"
+
+msgid "default"
+msgstr "默认"
+
+msgid "not set"
+msgstr "未设置"
