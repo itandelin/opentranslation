@@ -161,6 +161,24 @@ class Log {
     }
 
     /**
+     * 动作名白名单化：不在已知动作列表内一律置空。
+     *
+     * get_recent() / count_all() 内部已走 $wpdb->prepare，
+     * 这里在调用点显式净化，既避免无意义查询，
+     * 也让静态审计能看出消费方只会收到白名单值。
+     *
+     * @param string $action 待净化的动作名
+     * @return string 白名单内的动作名，否则空串
+     */
+    public static function sanitize_action( $action ) {
+        $action = sanitize_key( (string) $action );
+        if ( '' === $action ) {
+            return '';
+        }
+        return in_array( $action, self::get_actions(), true ) ? $action : '';
+    }
+
+    /**
      * 删除 N 天前的日志。
      *
      * @param int $days 保留天数

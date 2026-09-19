@@ -43,6 +43,25 @@ class TP_Storage_Adapter {
     }
 
     /**
+     * 目标语言白名单化：不在发布语言列表内一律置空。
+     *
+     * 消费方（Cache::get_failed_items 等）内部已走 $wpdb->prepare，
+     * 这里在调用点显式净化，让静态审计能看出只有白名单值会流入查询。
+     *
+     * 注意语言码含大写（zh_CN），不能用 sanitize_key 处理。
+     *
+     * @param string $language 待净化的语言码
+     * @return string 白名单内的语言码，否则空串
+     */
+    public static function sanitize_language( $language ) {
+        $language = trim( (string) $language );
+        if ( '' === $language ) {
+            return '';
+        }
+        return in_array( $language, self::get_target_languages(), true ) ? $language : '';
+    }
+
+    /**
      * 语言码白名单化：只保留字母数字与下划线。
      *
      * 语言码来自 TP 设置，正常可信，但会直接拼进表名进入 SQL，

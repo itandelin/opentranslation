@@ -162,11 +162,8 @@ class Admin {
         $log_page     = isset( $_GET['log_page'] ) ? max( 1, absint( $_GET['log_page'] ) ) : 1;
         $log_per_page = 50;
 
-        // 白名单校验：get_recent 已走 prepare，但白名单能避免无意义查询
-        $log_actions = Log::get_actions();
-        if ( '' !== $log_action && ! in_array( $log_action, $log_actions, true ) ) {
-            $log_action = '';
-        }
+        // 白名单净化：不在已知动作列表内一律置空，见 Log::sanitize_action
+        $log_action = Log::sanitize_action( $log_action );
 
         $logs      = Log::get_recent( $log_per_page, ( $log_page - 1 ) * $log_per_page, $log_action );
         $log_total = Log::count_all( $log_action );
@@ -175,12 +172,10 @@ class Admin {
     }
 
     public function render_failures_page() {
-        $languages = TP_Storage_Adapter::get_target_languages();
-
         $language = isset( $_GET['lang'] ) ? sanitize_text_field( wp_unslash( $_GET['lang'] ) ) : '';
-        if ( '' !== $language && ! in_array( $language, $languages, true ) ) {
-            $language = '';
-        }
+
+        // 白名单净化：不在目标语言列表内一律置空，见 TP_Storage_Adapter::sanitize_language
+        $language = TP_Storage_Adapter::sanitize_language( $language );
 
         $page     = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
         $per_page = 20;
