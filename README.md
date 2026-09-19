@@ -238,6 +238,20 @@ OpenTranslation -> Queue & Logs
 
 `Source` 不得含尖括号、不得只由数字组成，也不得匹配 `protect` 或 TranslatePress 自身的 `1TP1T` 形式占位符——这类输入保存时会被直接拒绝。
 
+### Import / Export
+
+配置迁移页。把本站的设置、模型、术语表与翻译范围导出成 JSON，或从别的站点导入。暂停语言、模型健康、用量、日志与缓存属于运行时状态，不参与导出。
+
+导出默认不含密钥；勾选 `包含 API Key` 后文件将包含明文密钥，界面同时给出红字警告。下载文件名形如 `opentranslation-config-20260918-1530.json`。
+
+导入为三步：上传 → 预览 → 确认。预览状态按用户保存 15 分钟，过期需重新上传。
+
+- 预览页列出来源站点、导出时间、来源插件版本、各类条目计数，以及文件是否含密钥
+- `将导入的模型` 表逐条标注密钥状态：`文件提供`、`沿用本站已有密钥`、`缺失，需手动填写`（后者标红）
+- `将被跳过` 表列出无法导入的条目及原因，例如 Base URL 指向内网而被拒的模型
+- 不含密钥的文件按模型标识（Provider + 模型 + Base URL）沿用本站已有密钥
+- 确认导入会覆盖现有模型与术语表，预览页顶部有对应警告，建议先导出当前配置作为备份
+
 ### Queue & Logs
 
 用于观察后台翻译状态。你可以看到：
@@ -445,11 +459,12 @@ apply_filters( 'opentranslation_allow_frontend_live_translation', false )
 - Base URL 只接受 `https`，并拒绝回环、私有网段、云元数据等内网 / 保留地址
 - 对模型服务的请求禁止跟随重定向
 - 后台不是 HTTPS 时，模型页会提示 API Key 将以明文经网络传输
+- 导出文件默认不含 API Key；勾选 `包含 API Key` 时界面会红字警告，导出的密钥为明文，请妥善保管并在用后删除
 
 ## 已知技术债
 
 - `class-claude-client.php` 与 `class-openai-client.php` 有约 120 行相似的重试 / 切块逻辑。两者请求体、响应体、错误结构都不同，抽公共基类的耦合可能比重复更差，留待出现第三个 Provider 时再评估。
-- `class-scheduler.php`、`class-translator.php`、`class-claude-client.php`、`class-openai-client.php` 超过 300 行的单文件上限；`class-translator.php` 的 `translate_batch()` 与 `test_connection()` 超过 50 行的单函数上限。这些超限是内聚的，强拆会降低可读性，暂不处理。
+- `class-translator.php` 的 `translate_batch()` 与 `test_connection()` 超过 50 行的单函数上限。这些超限是内聚的，强拆会降低可读性，暂不处理。
 - `Cache::set()` 的写后失效修复在无持久化对象缓存的环境下无法实证，将来上 Redis 后需补验。
 
 ## 卸载说明
