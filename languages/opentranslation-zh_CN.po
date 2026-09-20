@@ -162,8 +162,8 @@ msgstr "区分大小写"
 msgid "Check the model configuration or reset manually."
 msgstr "请检查模型配置或手动重置。"
 
-msgid "Choose the translation scope by content ownership. Ownership comes from the post association TranslatePress records while rendering pages. \"Not linked to a post\" means TP has not recorded an owner for the string yet (menus, footers, theme copy, and content on pages nobody has visited)."
-msgstr "按内容归属选择翻译范围。归属来自 TranslatePress 在页面渲染时记录的文章关联；『未关联文章』表示 TP 尚未记录归属的字符串（菜单、页脚、主题文案等，也包括尚未被访问过的页面内容）。"
+msgid "Choose the translation scope by the type of page being rendered. \"Not linked to a post\" covers the front page, archives, search, 404, and anything outside a single post."
+msgstr "按当前渲染的页面类型选择翻译范围。『未关联文章』涵盖首页、归档页、搜索页、404，以及所有非单篇内容的页面。"
 
 msgid "Circuit open"
 msgstr "熔断中"
@@ -267,8 +267,8 @@ msgstr "翻译失败条目"
 msgid "Failed items reset and queue triggered."
 msgstr "失败项已重置，队列已触发。"
 
-msgid "Failed to parse model response as JSON array."
-msgstr "无法将模型响应解析为 JSON 数组。"
+msgid "Failed to parse model response as JSON."
+msgstr "无法将模型响应解析为 JSON。"
 
 msgid "Failures"
 msgstr "失败条目"
@@ -465,6 +465,9 @@ msgstr "下次执行"
 msgid "No"
 msgstr "否"
 
+msgid "No AI models configured in OpenTranslation."
+msgstr "OpenTranslation 中尚未配置 AI 模型。"
+
 msgid "No failed items."
 msgstr "暂无失败条目。"
 
@@ -494,6 +497,9 @@ msgstr "TranslatePress 中未配置目标语言。"
 
 msgid "No terms configured."
 msgstr "暂无术语。"
+
+msgid "No usable model client."
+msgstr "没有可用的模型客户端。"
 
 msgid "No usage recorded yet."
 msgstr "暂无用量记录。"
