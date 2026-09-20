@@ -71,13 +71,13 @@ class Uninstaller {
         self::delete_options();
     }
 
+    /**
+     * 清理历史遗留的排程。
+     *
+     * Scheduler 已删除，这里用硬编码的 hook 名，
+     * 清掉旧版本可能还挂着的 WP-Cron 与 Action Scheduler 任务。
+     */
     private static function unschedule() {
-        if ( class_exists( '\OpenTranslation\Scheduler' ) ) {
-            Scheduler::unschedule_all();
-            return;
-        }
-
-        // Scheduler 未加载时的等效清理
         $timestamp = wp_next_scheduled( 'opentranslation_process_queue' );
         while ( $timestamp ) {
             wp_unschedule_event( $timestamp, 'opentranslation_process_queue' );

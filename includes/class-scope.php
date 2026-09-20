@@ -8,15 +8,61 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * 翻译范围控制。
  *
- * 按「归属桶」过滤：桶 = 各 post_type + 特殊桶 __unlinked__（未关联文章）。
- * 归属来自 TP 在页面渲染时记录的 `trp_original_meta.post_parent_id → wp_posts.post_type`，
- * 字典表没有 context 列，这是可用的最近似归属信息。
+ * 按「归属桶」过滤：桶 = 各 post_type + 特殊桶 __unlinked__（首页/归档/搜索/404 等非单篇页面）。
  *
- * 过滤在 SQL 层完成（就绪扫描、就绪判定、未译计数共用 Scope::sql_where）。
+ * 过滤挂在 TranslatePress 的 `trp_allow_machine_translation_for_string` 上，
+ * 由 TP 在前台渲染每个字符串时询问；返回 false 即该字符串不送机器翻译。
  */
 class Scope {
 
     const UNLINKED = '__unlinked__';
+
+    /**
+     * 注册到 TranslatePress 的逐条翻译开关。
+     *
+     * 由 Plugin::init() 在前后台都调用一次。
+     */
+    public static function register() {
+        add_filter( 'trp_allow_machine_translation_for_string', array( __CLASS__, 'allow_for_current_page' ), 10, 2 );
+    }
+
+    /**
+     * 按当前渲染页面的类型决定该字符串是否送机器翻译。
+     *
+     * 语义变更说明：旧实现按字符串在 trp_original_meta 中登记的来源归属判定，
+     * 新实现按当前正在渲染的页面类型判定。同一字符串出现在多种页面类型时，
+     * 两者结论可能不同。新语义对「按页面类型控成本」这一实际诉求更贴切。
+     *
+     * @param bool   $allow  TP 与其它插件的既有判定
+     * @param string $string 待翻译的原文
+     * @return bool
+     */
+    public static function allow_for_current_page( $allow, $string = '' ) {
+        // 别人已经否决过就不再翻案
+        if ( ! $allow ) {
+            return $allow;
+        }
+
+        // 当前目标语言由 TP 在渲染期间写入全局变量；拿不到就不干预
+        $language = isset( $GLOBALS['TRP_LANGUAGE'] ) ? (string) $GLOBALS['TRP_LANGUAGE'] : '';
+        if ( '' === $language ) {
+            return $allow;
+        }
+
+        $config = self::get( $language );
+        if ( 'all' === $config['mode'] ) {
+            return $allow;
+        }
+
+        // 仅发布：草稿/私密等状态的单篇内容一律不翻（normalize_config 已保证只有 include 模式能开）
+        if ( $config['published_only'] && self::query_ready() && is_singular() && 'publish' !== get_post_status() ) {
+            return false;
+        }
+
+        $in_bucket = in_array( self::current_page_bucket(), $config['buckets'], true );
+
+        return 'include' === $config['mode'] ? $in_bucket : ! $in_bucket;
+    }
 
     /**
      * 规范化后的某语言范围配置。
@@ -64,120 +110,7 @@ class Scope {
     }
 
     /**
-     * SQL WHERE 片段（'' 或以 ' AND ' 开头），表别名固定 d。
-     *
-     * 片段内不含用户输入的未转义值：post_type 已限定 [a-z0-9_-]，
-     * 表名来自 $wpdb->prefix（插件常量），未关联桶为内部常量。
-     *
-     * @param string $language
-     * @return string
-     */
-    public static function sql_where( $language ) {
-        $config = self::get( $language );
-        if ( 'all' === $config['mode'] ) {
-            return '';
-        }
-
-        global $wpdb;
-        $meta_table  = $wpdb->prefix . 'trp_original_meta';
-        $posts_table = $wpdb->prefix . 'posts';
-
-        $include_unlinked = in_array( self::UNLINKED, $config['buckets'], true );
-        $post_types       = array_values( array_diff( $config['buckets'], array( self::UNLINKED ) ) );
-
-        $linked_subquery = "SELECT m.original_id FROM `{$meta_table}` m"
-            . " INNER JOIN `{$posts_table}` p ON p.ID = m.meta_value"
-            . " WHERE m.meta_key = 'post_parent_id'";
-
-        if ( ! empty( $post_types ) ) {
-            $quoted = array();
-            foreach ( $post_types as $post_type ) {
-                $quoted[] = "'" . esc_sql( $post_type ) . "'";
-            }
-            $linked_subquery .= ' AND p.post_type IN (' . implode( ',', $quoted ) . ')';
-        }
-
-        if ( $config['published_only'] ) {
-            $linked_subquery .= " AND p.post_status = 'publish'";
-        }
-
-        $has_any_link = "SELECT original_id FROM `{$meta_table}` WHERE meta_key = 'post_parent_id'";
-
-        if ( 'include' === $config['mode'] ) {
-            $parts = array();
-            if ( ! empty( $post_types ) ) {
-                $parts[] = "d.original_id IN ( {$linked_subquery} )";
-            }
-            if ( $include_unlinked ) {
-                $parts[] = "d.original_id NOT IN ( {$has_any_link} )";
-            }
-            return empty( $parts ) ? '' : ' AND ( ' . implode( ' OR ', $parts ) . ' )';
-        }
-
-        // exclude：任一命中即排除；排除未关联 = 只保留已关联
-        $parts = array();
-        if ( ! empty( $post_types ) ) {
-            $parts[] = "d.original_id NOT IN ( {$linked_subquery} )";
-        }
-        if ( $include_unlinked ) {
-            $parts[] = "d.original_id IN ( {$has_any_link} )";
-        }
-
-        return empty( $parts ) ? '' : ' AND ( ' . implode( ' AND ', $parts ) . ' )';
-    }
-
-    /**
-     * 各归属桶的分布：总数与未译数（COUNT(DISTINCT d.id)）。
-     *
-     * @param string $language
-     * @return array bucket => ['total'=>int,'untranslated'=>int]
-     */
-    public static function distribution( $language ) {
-        global $wpdb;
-        $table = TP_Storage_Adapter::get_dictionary_table( $language );
-
-        $sql = "SELECT COALESCE(p.post_type, '" . self::UNLINKED . "') AS bucket,"
-            . ' COUNT(DISTINCT d.id) AS total,'
-            . " COUNT(DISTINCT CASE WHEN (d.translated = '' OR d.translated IS NULL) AND d.status != 2 THEN d.id END) AS untranslated"
-            . " FROM `{$table}` d"
-            . " LEFT JOIN {$wpdb->prefix}trp_original_meta m"
-            . "   ON m.original_id = d.original_id AND m.meta_key = 'post_parent_id'"
-            . " LEFT JOIN {$wpdb->prefix}posts p ON p.ID = m.meta_value"
-            . " GROUP BY COALESCE(p.post_type, '" . self::UNLINKED . "')";
-
-        $rows   = $wpdb->get_results( $sql, ARRAY_A );
-        $result = array();
-        foreach ( $rows as $row ) {
-            $bucket = isset( $row['bucket'] ) ? (string) $row['bucket'] : self::UNLINKED;
-            $result[ $bucket ] = array(
-                'total'        => (int) $row['total'],
-                'untranslated' => (int) $row['untranslated'],
-            );
-        }
-
-        return $result;
-    }
-
-    /**
-     * 应用范围后的未译条目数，供保存时告警。
-     *
-     * @param string $language
-     * @return int
-     */
-    public static function ready_count( $language ) {
-        global $wpdb;
-        $table = TP_Storage_Adapter::get_dictionary_table( $language );
-        $where = self::sql_where( $language );
-
-        return (int) $wpdb->get_var(
-            "SELECT COUNT(*) FROM `{$table}` d"
-            . " WHERE ( d.translated = '' OR d.translated IS NULL ) AND d.status != 2"
-            . $where
-        );
-    }
-
-    /**
-     * sanitize_settings 委托：规范化 + 逐条告警（含范围内无条目）。
+     * sanitize_settings 委托：规范化 + 逐条告警。
      *
      * @param array $input     表单提交的 scope 数组
      * @param array $languages 目标语言白名单
@@ -191,23 +124,41 @@ class Scope {
             add_settings_error( 'opentranslation_settings', 'scope_warn', $warning_text, 'warning' );
         }
 
-        foreach ( $languages as $language ) {
-            $cfg = $output[ $language ];
-            if ( 'all' !== $cfg['mode'] && 0 === self::ready_count( $language ) ) {
-                add_settings_error(
-                    'opentranslation_settings',
-                    'scope_empty_' . $language,
-                    sprintf(
-                        /* translators: %s is a language code. */
-                        __( '%s: no translatable entries under the current translation scope.', 'opentranslation' ),
-                        $language
-                    ),
-                    'warning'
-                );
-            }
+        return $output;
+    }
+
+    /**
+     * 当前渲染页面归属哪个桶。
+     *
+     * 单篇内容归自身 post_type；首页/归档/搜索/404 以及主查询之外的场景
+     * （后台、cron、REST）统一归到未关联桶。
+     *
+     * @return string
+     */
+    private static function current_page_bucket() {
+        if ( ! self::query_ready() ) {
+            return self::UNLINKED;
         }
 
-        return $output;
+        if ( is_singular() ) {
+            $post_type = get_post_type();
+            return $post_type ? (string) $post_type : self::UNLINKED;
+        }
+
+        return self::UNLINKED;
+    }
+
+    /**
+     * 主查询是否已就绪。
+     *
+     * 未走到 `wp` 动作时条件标签既会报 notice，结果也不可信。
+     *
+     * @return bool
+     */
+    private static function query_ready() {
+        return function_exists( 'did_action' )
+            && did_action( 'wp' )
+            && function_exists( 'is_singular' );
     }
 
     /**

@@ -45,8 +45,8 @@ ot_assert_same(
 
 ot_test_group( 'Log::level_for：动作分级' );
 
-ot_assert_same( 'debug', Log::level_for( 'scheduler_run' ), '调度心跳为 debug 级' );
-ot_assert_same( 'error', Log::level_for( 'failed' ), '失败为 error 级' );
-ot_assert_same( 'warn', Log::level_for( 'retry' ), '重试为 warn 级' );
+ot_assert_same( 'error', Log::level_for( 'item_failed' ), '单条永久失败为 error 级' );
+ot_assert_same( 'warn', Log::level_for( 'count_mismatch' ), '条数不符为 warn 级' );
+ot_assert_same( 'warn', Log::level_for( 'model_circuit_open' ), '熔断为 warn 级' );
 ot_assert_same( 'warn', Log::level_for( 'model_fallback' ), '模型降级为 warn 级' );
 ot_assert_same( 'info', Log::level_for( 'unknown_action' ), '未列出的动作默认 info 级' );

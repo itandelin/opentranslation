@@ -21,6 +21,9 @@ require_once __DIR__ . '/../includes/class-log.php';
 require_once __DIR__ . '/../includes/interface-model-client.php';
 require_once __DIR__ . '/../includes/class-claude-client.php';
 require_once __DIR__ . '/../includes/class-openai-client.php';
+require_once __DIR__ . '/../includes/class-encrypted-options.php';
+require_once __DIR__ . '/../includes/class-usage.php';
+require_once __DIR__ . '/../includes/class-request-budget.php';
 
 foreach ( glob( __DIR__ . '/test-*.php' ) as $test_file ) {
     require_once $test_file;

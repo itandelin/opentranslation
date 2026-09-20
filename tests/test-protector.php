@@ -160,3 +160,40 @@ $pc2->protect( '纯文本无可保护内容' );
 $pc2_mixed = $pc2->validate( '译文<protect-5>混杂</protect-7>' );
 ot_assert_true( is_array( $pc2_mixed ), '开闭混杂的无主占位符被判失败' );
 ot_assert_same( 2, count( $pc2_mixed ), '开闭标签各报 1 个' );
+
+// 回归：URL 紧邻 HTML 标签
+//
+// 旧的 URL 模式 /https?:\/\/[^\s]+/ 不排除 `<`，会把前一轮生成的
+// <protect-N> 卷进 URL 形成嵌套 token，restore() 后必然残留，
+// 使这类源串永久翻译失败。
+ot_test_group( 'Protector：URL 紧邻标签不产生嵌套 token' );
+
+$pu = new Protector();
+$pu_protected = $pu->protect( 'visit https://example.com<br/> now' );
+
+ot_assert_same(
+    false,
+    strpos( $pu_protected, 'https://' ) !== false,
+    'URL 已被保护'
+);
+
+foreach ( $pu->get_tokens() as $pu_token => $pu_value ) {
+    ot_assert_same(
+        false,
+        Protector::has_residual_placeholder( $pu_value ),
+        'token 值内不含嵌套占位符：' . $pu_token
+    );
+}
+
+// 模型原样回传所有占位符时，还原结果必须干净
+ot_assert_same( true, $pu->validate( $pu_protected ), '原样回传通过校验' );
+ot_assert_same(
+    false,
+    Protector::has_residual_placeholder( $pu->restore( $pu_protected ) ),
+    '还原后无残留占位符'
+);
+ot_assert_same(
+    'visit https://example.com<br/> now',
+    $pu->restore( $pu_protected ),
+    '还原结果与原文一致'
+);

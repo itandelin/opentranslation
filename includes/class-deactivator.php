@@ -7,19 +7,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Deactivator {
     public static function deactivate() {
-        if ( class_exists( '\OpenTranslation\Scheduler' ) ) {
-            Scheduler::unschedule_all();
-            return;
-        }
-
-        $timestamp = wp_next_scheduled( 'opentranslation_process_queue' );
-        while ( $timestamp ) {
-            wp_unschedule_event( $timestamp, 'opentranslation_process_queue' );
-            $timestamp = wp_next_scheduled( 'opentranslation_process_queue' );
-        }
-
-        if ( function_exists( 'as_unschedule_all_actions' ) ) {
-            as_unschedule_all_actions( 'opentranslation_as_process' );
-        }
+        // 当前无需停用时清理：插件已不再注册任何 cron / Action Scheduler 任务。
     }
 }

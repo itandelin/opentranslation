@@ -8,7 +8,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Activator {
     public static function activate() {
         self::create_tables();
-        self::schedule_cron();
         update_option( 'opentranslation_db_version', OPENTRANSLATION_DB_VERSION );
     }
 
@@ -23,6 +22,7 @@ class Activator {
             return;
         }
         self::create_tables();
+        self::drop_legacy_tables();
         update_option( 'opentranslation_db_version', OPENTRANSLATION_DB_VERSION );
     }
 
@@ -32,31 +32,9 @@ class Activator {
         $charset = $wpdb->get_charset_collate();
         $prefix  = $wpdb->prefix;
 
-        foreach ( array( 'cache_sql', 'log_sql', 'rate_limit_sql', 'usage_sql' ) as $method ) {
+        foreach ( array( 'log_sql', 'usage_sql' ) as $method ) {
             dbDelta( self::$method( $prefix, $charset ) );
         }
-    }
-
-    private static function cache_sql( $prefix, $charset ) {
-        return "CREATE TABLE IF NOT EXISTS {$prefix}opentranslation_cache (
-            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-            cache_key varchar(32) NOT NULL,
-            source_text longtext NOT NULL,
-            target_lang varchar(10) NOT NULL,
-            context varchar(100) DEFAULT NULL,
-            translated_text longtext,
-            model varchar(50) DEFAULT NULL,
-            created_at datetime DEFAULT CURRENT_TIMESTAMP,
-            updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            status varchar(20) DEFAULT 'pending',
-            retry_count tinyint(3) unsigned DEFAULT 0,
-            next_retry_at datetime DEFAULT NULL,
-            PRIMARY KEY (id),
-            UNIQUE KEY cache_key (cache_key),
-            KEY target_lang (target_lang),
-            KEY status (status),
-            KEY next_retry_at (next_retry_at)
-        ) {$charset};";
     }
 
     private static function log_sql( $prefix, $charset ) {
@@ -70,16 +48,6 @@ class Activator {
             KEY cache_key (cache_key),
             KEY action (action),
             KEY created_at (created_at)
-        ) {$charset};";
-    }
-
-    private static function rate_limit_sql( $prefix, $charset ) {
-        return "CREATE TABLE IF NOT EXISTS {$prefix}opentranslation_rate_limit (
-            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-            window_start datetime NOT NULL,
-            request_count int(10) unsigned DEFAULT 1,
-            PRIMARY KEY (id),
-            KEY window_start (window_start)
         ) {$charset};";
     }
 
@@ -102,13 +70,16 @@ class Activator {
         ) {$charset};";
     }
 
-    private static function schedule_cron() {
-        if ( class_exists( '\OpenTranslation\Scheduler' ) ) {
-            Scheduler::schedule_next();
-        }
-
-        if ( ! wp_next_scheduled( Scheduler::CRON_HOOK ) ) {
-            wp_schedule_single_event( time() + MINUTE_IN_SECONDS, Scheduler::CRON_HOOK );
+    /**
+     * 删除自建队列时代遗留的表。
+     *
+     * 译文已全部由 TranslatePress 写入 trp_dictionary_* 字典表，
+     * 这两张表只是当时的缓存与限流副本，删除不丢翻译结果。
+     */
+    private static function drop_legacy_tables() {
+        global $wpdb;
+        foreach ( array( 'opentranslation_cache', 'opentranslation_rate_limit' ) as $table ) {
+            $wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}{$table}`" ); // phpcs:ignore WordPress.DB
         }
     }
 }

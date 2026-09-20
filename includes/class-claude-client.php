@@ -19,7 +19,8 @@ class Claude_Client implements Model_Client {
     private $model;
     private $temperature;
     private $max_tokens;
-    private $timeout = 60;
+    private $timeout = 30;
+    private $source_lang = '';
     private $last_request_units = 0;
     private $last_usage = array( 'prompt_tokens' => 0, 'completion_tokens' => 0, 'total_tokens' => 0 );
 
@@ -34,11 +35,14 @@ class Claude_Client implements Model_Client {
         $this->temperature = isset( $config['temperature'] ) ? (float) $config['temperature'] : 0.3;
         // Claude Messages API 要求 max_tokens >= 1，界面填 0 表示「自动」需回落到默认值
         $this->max_tokens = ! empty( $config['max_tokens'] ) ? (int) $config['max_tokens'] : 4096;
+        $timeout = isset( $config['timeout'] ) ? (int) $config['timeout'] : 0;
+        $this->timeout = $timeout > 0 ? $timeout : (int) apply_filters( 'opentranslation_request_timeout', 30 );
     }
 
-    public function translate( $items, $target_lang, $system_prompt = '' ) {
+    public function translate( $items, $target_lang, $system_prompt = '', $source_lang = '' ) {
         $this->last_request_units = 0;
         $this->last_usage = array( 'prompt_tokens' => 0, 'completion_tokens' => 0, 'total_tokens' => 0 );
+        $this->source_lang = (string) $source_lang;
         return $this->translate_resilient( $items, $target_lang, $system_prompt );
     }
 
@@ -127,11 +131,13 @@ class Claude_Client implements Model_Client {
         foreach ( $items as $index => $text ) {
             $lines[] = ( $index + 1 ) . '. ' . $text;
         }
-        $prompt  = "Translate the following texts to {$target_lang}.\n\n";
+        $source = '' !== $this->source_lang ? " from {$this->source_lang}" : '';
+        $prompt  = "Translate the following numbered texts{$source} to {$target_lang}.\n\n";
         $prompt .= "Rules:\n";
         $prompt .= "- Preserve all <protect-N> placeholders exactly as they appear.\n";
         $prompt .= "- Do not translate HTML tags, shortcodes, variables, or URLs.\n";
-        $prompt .= "- Return ONLY a JSON array of translated strings in the same order.\n";
+        $prompt .= "- Return ONLY a JSON object mapping each input number to its translation,\n";
+        $prompt .= "  for example {\"1\":\"...\",\"2\":\"...\"}. Every input number must appear exactly once.\n";
         $prompt .= "- No extra explanations, no markdown formatting.\n\n";
         $prompt .= "Texts:\n" . implode( "\n", $lines );
         return $prompt;
@@ -212,7 +218,13 @@ class Claude_Client implements Model_Client {
                 break;
             }
 
-            usleep( $base_delay_ms * $attempt * 1000 );
+            // 上游明确给了 Retry-After 就听它的，否则线性退避
+            $delay_ms    = $base_delay_ms * $attempt;
+            $retry_after = $this->retry_after_ms( $response );
+            if ( $retry_after > 0 ) {
+                $delay_ms = min( $retry_after, 30000 );
+            }
+            usleep( $delay_ms * 1000 );
         }
 
         $last_request['request_units'] = count( $attempts );
@@ -230,6 +242,31 @@ class Claude_Client implements Model_Client {
             return true;
         }
         return $status_code >= 200 && $status_code < 300 && '' === trim( (string) $raw_body );
+    }
+
+    /**
+    /**
+     * 上游 429 / 503 给出的 Retry-After（秒数或 HTTP 日期）转成毫秒。
+     */
+    private function retry_after_ms( $response ) {
+        if ( is_wp_error( $response ) ) {
+            return 0;
+        }
+
+        $header = wp_remote_retrieve_header( $response, 'retry-after' );
+        if ( is_array( $header ) ) {
+            $header = reset( $header );
+        }
+        if ( '' === $header || null === $header ) {
+            return 0;
+        }
+        if ( is_numeric( $header ) ) {
+            return (int) ( (float) $header * 1000 );
+        }
+
+        $timestamp = strtotime( $header );
+
+        return $timestamp ? max( 0, ( $timestamp - time() ) * 1000 ) : 0;
     }
 
     /**
@@ -251,7 +288,7 @@ class Claude_Client implements Model_Client {
 
         $data = json_decode( $request['raw_body'], true );
         $this->add_usage( $data );
-        $parsed = $this->parse_response( $data['content'][0]['text'] );
+        $parsed = $this->parse_response( $data['content'][0]['text'], count( $items ) );
 
         if ( is_wp_error( $parsed ) ) {
             return $this->maybe_split_request( $items, $target_lang, $system_prompt, $parsed, $depth );
@@ -339,7 +376,11 @@ class Claude_Client implements Model_Client {
             return false;
         }
 
-        return in_array( (int) $error->get_error_data( 'status_code' ), self::retryable_status_codes(), true );
+        // 429 不切块：限流下拆成更多请求只会放大问题，
+        // 正确处理是按 Retry-After 退避重试。
+        $status = (int) $error->get_error_data( 'status_code' );
+
+        return 429 !== $status && in_array( $status, self::retryable_status_codes(), true );
     }
 
     private function build_http_error( $status_code, $raw_body ) {
@@ -368,33 +409,18 @@ class Claude_Client implements Model_Client {
      *
      * @return array|\WP_Error
      */
-    private function parse_response( $content ) {
+    private function parse_response( $content, $expected = null ) {
         $content = trim( (string) $content );
 
-        // 优先提取任意位置的 JSON 数组
-        if ( preg_match( '/\[.*\]/s', $content, $matches ) ) {
-            $decoded = json_decode( $matches[0], true );
-            if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded ) ) {
-                return $decoded;
+        $decoded = $this->decode_payload( $content );
+        if ( is_array( $decoded ) ) {
+            $normalized = $this->normalize_decoded( $decoded, $expected );
+            if ( null !== $normalized ) {
+                return $normalized;
             }
         }
 
-        // ```json 围栏
-        if ( preg_match( '/```json\s*(.*?)\s*```/s', $content, $matches ) ) {
-            $decoded = json_decode( $matches[1], true );
-            if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded ) ) {
-                return $decoded;
-            }
-        }
-
-        // 裸 ``` 围栏
-        $stripped = preg_replace( '/^```\s*|\s*```$/', '', $content );
-        $decoded  = json_decode( $stripped, true );
-        if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded ) ) {
-            return $decoded;
-        }
-
-        // 编号列表兜底
+        // 兜底：逐行解析编号列表
         $results = array();
         foreach ( preg_split( '/\r\n|\r|\n/', $content ) as $line ) {
             if ( preg_match( '/^\d+[\.\)\-:]\s*(.+)$/', trim( $line ), $matches ) ) {
@@ -406,7 +432,7 @@ class Claude_Client implements Model_Client {
             return $results;
         }
 
-        $message = __( 'Failed to parse model response as JSON array.', 'opentranslation' );
+        $message = __( 'Failed to parse model response as JSON.', 'opentranslation' );
         if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
             $message .= ' Debug: ' . $this->limit_preview( $content, 500 );
         }
@@ -414,8 +440,77 @@ class Claude_Client implements Model_Client {
         return new \WP_Error( 'parse_error', $message );
     }
 
+    /**
+     * 从模型输出里抠出 JSON 负载。
+     *
+     * 整体解析优先：旧实现先用贪婪的 /\[.*\]/ 去抓，会把正文里的方括号一并吞进来。
+     */
+    private function decode_payload( $content ) {
+        $candidates = array( $content );
+
+        if ( preg_match( '/```json\s*(.*?)\s*```/s', $content, $m ) ) {
+            $candidates[] = $m[1];
+        }
+        if ( preg_match( '/```\s*(.*?)\s*```/s', $content, $m ) ) {
+            $candidates[] = $m[1];
+        }
+        if ( preg_match( '/\{.*\}/s', $content, $m ) ) {
+            $candidates[] = $m[0];
+        }
+        if ( preg_match( '/\[.*\]/s', $content, $m ) ) {
+            $candidates[] = $m[0];
+        }
+
+        foreach ( $candidates as $candidate ) {
+            $decoded = json_decode( trim( $candidate ), true );
+            if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded ) ) {
+                return $decoded;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 把解码结果归一成按输入顺序排列的数组。
+     *
+     * 编号对象的键必须恰好是 1..N。纯文本条目没有占位符，
+     * 一旦顺序错乱后续校验发现不了，因此这里宁可判失败。
+     */
+    private function normalize_decoded( $decoded, $expected ) {
+        if ( array() === $decoded ) {
+            return array();
+        }
+
+        if ( array_keys( $decoded ) === range( 0, count( $decoded ) - 1 ) ) {
+            return array_values( $decoded );
+        }
+
+        $count = ( null === $expected ) ? count( $decoded ) : (int) $expected;
+        if ( $count < 1 ) {
+            return null;
+        }
+
+        $keys   = array_map( 'strval', array_keys( $decoded ) );
+        $wanted = array_map( 'strval', range( 1, $count ) );
+        sort( $keys, SORT_STRING );
+        sort( $wanted, SORT_STRING );
+
+        if ( $keys !== $wanted ) {
+            return null;
+        }
+
+        $ordered = array();
+        for ( $i = 1; $i <= $count; $i++ ) {
+            $ordered[] = $decoded[ $i ];
+        }
+
+        return $ordered;
+    }
+
     private function limit_preview( $text, $limit = 1500 ) {
-        $text = trim( (string) $text );
+        // 上游 body 可能回显请求头、账号 ID、key 前缀，进诊断面板前必须脱敏
+        $text = Log::redact( trim( (string) $text ) );
         if ( strlen( $text ) <= $limit ) {
             return $text;
         }

@@ -15,57 +15,78 @@ OpenTranslation 是一个面向 [TranslatePress](https://translatepress.com/) �
 
 ## 核心特性
 
-- 接入 TranslatePress，自定义自动翻译引擎 `OpenTranslation AI`
+- 接入 TranslatePress，注册自定义自动翻译引擎 `OpenTranslation AI`
 - 支持 `OpenAI` 与 `Anthropic` 两类 Provider（即 Chat Completions 与 Messages 两种接口协议）
 - 支持 OpenAI / Anthropic 兼容网关，自定义 `Base URL`
 - 支持多模型优先级与自动降级
+- 支持模型熔断：连续失败的模型自动停用一段时间，避免拖垮整站
 - 支持模型连通性测试与结构化诊断输出
-- 支持缓存、失败重试、重试退避
-- 支持后台异步队列翻译
-- 支持按语言暂停 / 恢复队列
+- 支持术语表，强制指定词汇的固定译法
+- 支持按页面类型限定翻译范围
+- 支持 Token 用量与成本统计
 - 支持 URL、邮箱、媒体路径、协议链接等内容直通，不占模型请求
 - 支持占位符保护，尽量避免 HTML、短代码、变量被错误翻译
-- 默认关闭前台实时翻译，避免页面请求被同步模型调用拖慢
+- 单次请求预算上限，前台实时翻译不会拖慢首屏
+- API Key 加密存储，模型网关地址做 SSRF 校验
 
 ## 工作原理
 
-OpenTranslation 的整体链路如下：
+插件是 TranslatePress 的**引擎适配器**，只负责「把 TP 的翻译请求转给 AI 模型」这一件事。
+何时翻译、翻译哪些字符串、译文存到哪里，全部由 TranslatePress 决定。
 
-1. TranslatePress 在设置中选择自动翻译引擎 `OpenTranslation AI`
-2. 页面内容被 TranslatePress 扫描并进入词库
-3. OpenTranslation 从 TranslatePress 词库中取出未翻译内容
-4. 插件根据规则判断：
-   - 可直通内容直接回写原文
-   - 已有缓存的内容直接回填
-   - 其余内容提交给 AI 模型翻译
-5. 翻译结果写入 OpenTranslation 缓存表
-6. 最终批量写回 TranslatePress 的字典表
+完整链路：
 
-默认情况下，前台页面访问不会主动触发实时模型翻译。翻译主要由后台异步队列完成，这样可以显著降低前台 504、超时和首屏卡顿的风险。
+1. 在 TranslatePress 的自动翻译设置中选择引擎 `OpenTranslation AI`
+2. TranslatePress 渲染页面时扫描出未翻译的字符串
+3. TranslatePress 完成预处理：去重、过滤过短字符串、把 `%s` / `%d` 等替换为自己的占位符、执行指定短代码
+4. TranslatePress 调用本插件的引擎方法，传入这批字符串
+5. 插件按请求预算分批提交给 AI 模型：
+   - URL、邮箱等可直通内容原样返回，不消耗模型请求
+   - 其余内容做占位符保护后提交模型，返回后校验并还原
+6. 插件把译文交回 TranslatePress
+7. TranslatePress 写入自己的字典表，并负责前台展示与缓存
+
+插件不维护任何译文副本，也不直接读写 TranslatePress 的数据表。
 
 ## 当前运行策略
 
-为了保证前台访问稳定，插件当前采用以下策略：
+### 前台实时翻译 + 请求预算
 
-- **前台实时翻译默认关闭**
-  - 管理后台
-  - Ajax
-  - Cron
-  - REST
-  - WP-CLI
-  这些上下文允许触发翻译。
-  普通前台访问默认不触发实时模型请求。
+前台访问会触发实时翻译，但**单次页面请求有预算上限**，避免首屏被模型调用拖慢：
 
-- **后台优先异步处理**
-  - 优先使用 `Action Scheduler`
-  - 如果不可用，则回退到 `WP-Cron`
+| 场景 | 条数上限 | 时间上限 |
+| --- | --- | --- |
+| 普通访客 | 30 条 | 6 秒 |
+| 已登录管理员 | 200 条 | 60 秒 |
+| Cron / WP-CLI | 1000 条 | 不限时 |
 
-- **后台队列已做吞吐优化**
-  - 一次异步 worker 可在时间预算内连续处理多轮任务
-  - 翻译批次会同时参考“条数上限”和“字符预算上限”切块
-  - 长段落会自动拆成更小批次，减少模型超时或空响应概率
-  - 已有缓存结果会直接回填到 TranslatePress 词库
-  - URL 等明显无需翻译的内容会走 fast-path
+超出预算的字符串本轮不返回。TranslatePress 会在下次页面渲染时重新提交，
+因此内容多的页面会在若干次访问后逐步翻译完整，不会出现单次请求长时间阻塞。
+
+想快速预热整站，用管理员账号浏览一遍目标页面即可——管理员预算宽松得多。
+
+两个上限都可以用过滤器调整：
+
+```php
+add_filter( 'opentranslation_request_max_strings', function () { return 60; } );
+add_filter( 'opentranslation_request_max_seconds', function () { return 10; } );
+```
+
+### 建议开启 TranslatePress 的 Block crawlers
+
+在 TranslatePress 的自动翻译设置里开启 `Block crawlers`，
+可以避免爬虫访问把模型预算消耗在无人浏览的页面上。
+
+### 失败处理
+
+失败分两类，语义不同：
+
+- **瞬时失败**（网络错误、超时、429、5xx、模型全部熔断）：不返回该条目，
+  TranslatePress 下次渲染会自然重试
+- **永久失败**（占位符校验失败、模型拒答、空译文、响应类型异常）：返回空串，
+  TranslatePress 会记为「已机器翻译」并停止重试，前台显示原文
+
+这样既不会无限重复消耗 token，也不会把破损译文写进字典表。
 
 ## 环境要求
 

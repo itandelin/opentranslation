@@ -13,9 +13,6 @@ function ot_transfer_payload( array $over = array() ) {
         'site_url'          => 'https://source.test',
         'includes_api_keys' => false,
         'settings'          => array(
-            'batch_size'            => 20,
-            'cron_interval'         => 1,
-            'rate_limit_per_minute' => 20,
             'system_prompt'         => 'prompt',
             'plugin_language'       => 'zh_CN',
             'scope'                 => array(),
@@ -146,7 +143,7 @@ $keys = array_keys( $settings['normalized']['settings'] );
 sort( $keys );
 ot_assert_same( false, in_array( 'disabled_languages', $keys, true ), 'disabled_languages 不被导入' );
 ot_assert_same( false, in_array( 'evil', $keys, true ), '未知键被丢弃' );
-ot_assert_same( 7, $settings['normalized']['settings']['batch_size'], 'batch_size 被保留' );
+ot_assert_same( false, in_array( 'batch_size', $keys, true ), '已废弃的 batch_size 不被导入' );
 ot_assert_same( 'hello', $settings['normalized']['settings']['system_prompt'], 'system_prompt 被保留' );
 
 ot_test_group( 'Config_Transfer：temperature 夹取到 0-2' );

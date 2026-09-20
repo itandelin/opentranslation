@@ -23,11 +23,11 @@ class Config_Transfer {
 
     /**
      * 允许跨站迁移的 settings 键。其余键（如 disabled_languages）保留目标站原值。
+     *
+     * batch_size / cron_interval / rate_limit_per_minute 随自建队列一并移除：
+     * 翻译节奏现在由 Request_Budget 按请求决定，不再有可迁移的调度配置。
      */
     const TRANSFER_SETTING_KEYS = array(
-        'batch_size',
-        'cron_interval',
-        'rate_limit_per_minute',
         'system_prompt',
         'plugin_language',
         'scope',
@@ -207,12 +207,6 @@ class Config_Transfer {
         if ( isset( $normalized['glossary'] ) && is_array( $normalized['glossary'] ) ) {
             Glossary::save( $normalized['glossary'] );
         }
-
-        // 范围可能变了，按语言清掉未译计数缓存
-        foreach ( TP_Storage_Adapter::get_target_languages() as $language ) {
-            TP_Storage_Adapter::flush_count_cache( $language );
-        }
-
         return true;
     }
 
@@ -324,8 +318,7 @@ class Config_Transfer {
         $out['plugin_language'] = in_array( $plugin_language, $allowed_languages, true ) ? $plugin_language : 'zh_CN';
 
         // 用纯规范化的 sanitize()，不用 sanitize_settings()：
-        // 后者会 add_settings_error 并查字典表算 ready_count，
-        // 导入校验阶段既不该产生设置页告警，也不该依赖数据库。
+        // 后者会 add_settings_error，导入校验阶段不该产生设置页告警。
         $raw_scope      = isset( $raw['scope'] ) && is_array( $raw['scope'] ) ? $raw['scope'] : array();
         $scope_warnings = array();
         $out['scope']   = Scope::sanitize( $raw_scope, $languages, $scope_warnings );

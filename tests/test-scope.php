@@ -8,57 +8,6 @@ function ot_scope_unset() {
     unset( $GLOBALS['ot_test_options']['opentranslation_settings'] );
 }
 
-ot_test_group( 'Scope：未配置与 all' );
-
-ot_scope_unset();
-ot_assert_same( '', Scope::sql_where( 'zh_CN' ), '未配置返回空片段' );
-ot_assert_same( 'all', Scope::get( 'zh_CN' )['mode'], '未配置默认 mode=all' );
-
-ot_scope_set( array( 'zh_CN' => array( 'mode' => 'all' ) ) );
-ot_assert_same( '', Scope::sql_where( 'zh_CN' ), 'mode=all 返回空片段' );
-
-ot_test_group( 'Scope：include 构建' );
-
-ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( 'page', 'product' ), 'published_only' => false ) ) );
-$sql = Scope::sql_where( 'zh_CN' );
-ot_assert_same( false, '' === $sql, 'include 有片段' );
-ot_assert_same( true, false !== strpos( $sql, "p.post_type IN ('page','product')" ), '含两个 post_type IN' );
-ot_assert_same( true, false !== strpos( $sql, 'm.original_id' ), 'IN 子查询取 original_id' );
-ot_assert_same( true, false === strpos( $sql, 'NOT IN' ), '不含 NOT IN' );
-
-ot_test_group( 'Scope：include 含 unlinked' );
-
-ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( 'page', Scope::UNLINKED ) ) ) );
-$sql = Scope::sql_where( 'zh_CN' );
-ot_assert_same( true, false !== strpos( $sql, 'd.original_id NOT IN' ), '含 OR d.original_id NOT IN' );
-ot_assert_same( true, false !== strpos( $sql, 'OR d.original_id' ), '未关联桶用 OR 连接' );
-
-ot_test_group( 'Scope：include 仅 unlinked' );
-
-ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( Scope::UNLINKED ) ) ) );
-$sql = Scope::sql_where( 'zh_CN' );
-ot_assert_same( true, false !== strpos( $sql, 'd.original_id NOT IN' ), '仅未关联桶时只保留 NOT IN' );
-ot_assert_same( true, false === strpos( $sql, 'original_id IN ( ' ), '仅未关联桶时不匹配已关联条目' );
-ot_assert_same( true, false === strpos( $sql, ' OR ' ), '仅未关联桶时无 OR 分支' );
-
-ot_test_group( 'Scope：exclude 构建' );
-
-ot_scope_set( array( 'zh_CN' => array( 'mode' => 'exclude', 'buckets' => array( 'product' ), 'published_only' => true ) ) );
-$sql = Scope::sql_where( 'zh_CN' );
-ot_assert_same( true, false !== strpos( $sql, 'd.original_id NOT IN' ), 'exclude 用 NOT IN' );
-ot_assert_same( true, false === strpos( $sql, 'p.post_status' ), 'exclude 忽略 published_only（不出现 publish）' );
-
-ot_test_group( 'Scope：exclude 含 unlinked' );
-
-ot_scope_set( array( 'zh_CN' => array( 'mode' => 'exclude', 'buckets' => array( Scope::UNLINKED ) ) ) );
-$sql = Scope::sql_where( 'zh_CN' );
-ot_assert_same( true, false !== strpos( $sql, 'd.original_id IN ( SELECT original_id FROM' ), '排除未关联=要求已关联' );
-
-ot_test_group( 'Scope：published_only' );
-
-ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( 'page' ), 'published_only' => true ) ) );
-ot_assert_same( true, false !== strpos( Scope::sql_where( 'zh_CN' ), "p.post_status = 'publish'" ), 'include 含 publish 过滤' );
-
 ot_test_group( 'Scope：sanitize 规范化' );
 
 $warnings = array();
@@ -101,4 +50,79 @@ ot_assert_same( array( 'page' ), $g['buckets'], 'buckets 保留' );
 ot_assert_same( false, $g['published_only'], '缺省 published_only=false' );
 
 ot_scope_unset();
+ot_assert_same( 'all', Scope::get( 'zh_CN' )['mode'], '未配置默认 mode=all' );
 ot_assert_same( array( 'mode' => 'all', 'buckets' => array(), 'published_only' => false ), Scope::get( 'de_DE' ), '未配置语言返回默认结构' );
+
+ot_test_group( 'Scope：allow_for_current_page 不干预的场景' );
+
+// 当前渲染 page 单篇，语言 zh_CN
+ot_wp_page_set( array( 'singular' => true, 'post_type' => 'page' ) );
+$GLOBALS['TRP_LANGUAGE'] = 'zh_CN';
+
+// 别人已否决：即使范围命中也不翻案
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( 'page' ) ) ) );
+ot_assert_same( false, Scope::allow_for_current_page( false, 'Hello' ), '$allow=false 原样返回' );
+
+// mode=all：原样返回传入值
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'all' ) ) );
+ot_assert_same( true, Scope::allow_for_current_page( true, 'Hello' ), 'mode=all 原样返回 true' );
+
+// 未配置该语言（默认 all）
+ot_scope_unset();
+ot_assert_same( true, Scope::allow_for_current_page( true, 'Hello' ), '未配置 scope 原样返回 true' );
+
+// 无 $TRP_LANGUAGE：不干预
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( 'product' ) ) ) );
+unset( $GLOBALS['TRP_LANGUAGE'] );
+ot_assert_same( true, Scope::allow_for_current_page( true, 'Hello' ), '无 TRP_LANGUAGE 原样返回 true' );
+$GLOBALS['TRP_LANGUAGE'] = 'zh_CN';
+
+ot_test_group( 'Scope：allow_for_current_page include/exclude' );
+
+ot_wp_page_set( array( 'singular' => true, 'post_type' => 'page' ) );
+
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( 'page', 'product' ) ) ) );
+ot_assert_same( true, Scope::allow_for_current_page( true, 'Hello' ), 'include 命中当前 post_type → true' );
+
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( 'product' ) ) ) );
+ot_assert_same( false, Scope::allow_for_current_page( true, 'Hello' ), 'include 未命中 → false' );
+
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'exclude', 'buckets' => array( 'page' ) ) ) );
+ot_assert_same( false, Scope::allow_for_current_page( true, 'Hello' ), 'exclude 命中 → false' );
+
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'exclude', 'buckets' => array( 'product' ) ) ) );
+ot_assert_same( true, Scope::allow_for_current_page( true, 'Hello' ), 'exclude 未命中 → true' );
+
+ot_test_group( 'Scope：allow_for_current_page 未关联桶' );
+
+// 归档/首页/搜索/404 等非单篇页面归入 __unlinked__
+ot_wp_page_set( array( 'singular' => false ) );
+
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( Scope::UNLINKED ) ) ) );
+ot_assert_same( true, Scope::allow_for_current_page( true, 'Hello' ), '非单篇页面命中未关联桶 → true' );
+
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( 'page' ) ) ) );
+ot_assert_same( false, Scope::allow_for_current_page( true, 'Hello' ), '非单篇页面不属于 page 桶 → false' );
+
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'exclude', 'buckets' => array( Scope::UNLINKED ) ) ) );
+ot_assert_same( false, Scope::allow_for_current_page( true, 'Hello' ), 'exclude 未关联桶 → false' );
+
+// 主查询未就绪（后台、cron）同样归未关联桶
+ot_wp_page_set( array( 'wp_done' => 0, 'singular' => true, 'post_type' => 'page' ) );
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( 'page' ) ) ) );
+ot_assert_same( false, Scope::allow_for_current_page( true, 'Hello' ), '主查询未就绪时不按 post_type 判定' );
+
+ot_test_group( 'Scope：allow_for_current_page published_only' );
+
+ot_scope_set( array( 'zh_CN' => array( 'mode' => 'include', 'buckets' => array( 'page' ), 'published_only' => true ) ) );
+
+ot_wp_page_set( array( 'singular' => true, 'post_type' => 'page', 'post_status' => 'publish' ) );
+ot_assert_same( true, Scope::allow_for_current_page( true, 'Hello' ), 'published_only：已发布单篇 → true' );
+
+ot_wp_page_set( array( 'singular' => true, 'post_type' => 'page', 'post_status' => 'draft' ) );
+ot_assert_same( false, Scope::allow_for_current_page( true, 'Hello' ), 'published_only：草稿单篇 → false' );
+
+// 清理全局状态，避免影响后续测试文件
+unset( $GLOBALS['TRP_LANGUAGE'] );
+ot_wp_page_set();
+ot_scope_unset();

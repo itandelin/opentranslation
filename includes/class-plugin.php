@@ -20,7 +20,6 @@ class Plugin {
     }
 
     private function init() {
-        add_filter( 'cron_schedules', array( $this, 'add_cron_interval' ) );
 
         // 直接调用而非挂钩子：本方法已在 plugins_loaded 回调内执行，
         // 再往同一钩子挂同优先级回调本轮不会被触发（PHP foreach 迭代数组副本），
@@ -37,7 +36,7 @@ class Plugin {
         }
 
         Activator::maybe_upgrade();
-        new Scheduler();
+        Scope::register();
     }
 
     public function load_textdomain() {
@@ -53,18 +52,5 @@ class Plugin {
         }
 
         load_textdomain( 'opentranslation', OPENTRANSLATION_PLUGIN_DIR . 'languages/opentranslation-zh_CN.mo' );
-    }
-
-    public function add_cron_interval( $schedules ) {
-        $settings = get_option( 'opentranslation_settings', array() );
-        $interval = isset( $settings['cron_interval'] ) ? absint( $settings['cron_interval'] ) : 5;
-        $interval = max( 1, $interval );
-
-        $schedules['opentranslation_interval'] = array(
-            'interval' => $interval * MINUTE_IN_SECONDS,
-            'display'  => sprintf( __( 'Every %d minutes', 'opentranslation' ), $interval ),
-        );
-
-        return $schedules;
     }
 }

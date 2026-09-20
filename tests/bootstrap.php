@@ -68,11 +68,40 @@ if ( ! function_exists( 'get_option' ) ) {
     }
 }
 
-// 极简 $wpdb stub：Scope::sql_where 需要 prefix；esc_sql 用全局函数
+// 极简 $wpdb stub。
+//
+// 写方法一律无操作并返回成功：Log::add() 与 Usage::record() 属于旁路记录，
+// 不应影响被测的翻译逻辑。$GLOBALS['ot_test_queries'] 留给需要断言写入的用例。
 if ( ! class_exists( 'OT_Test_WPDB' ) ) {
     class OT_Test_WPDB {
         public $prefix = 'wp_';
+        public $last_error = '';
+
+        public function insert( $table, $data, $format = null ) {
+            $GLOBALS['ot_test_queries'][] = array( 'insert', $table, $data );
+            return 1;
+        }
+
+        public function query( $sql ) {
+            $GLOBALS['ot_test_queries'][] = array( 'query', $sql );
+            return 1;
+        }
+
+        public function prepare( $sql, ...$args ) {
+            return $sql;
+        }
+
+        public function get_var( $sql ) {
+            return null;
+        }
+
+        public function get_results( $sql, $output = null ) {
+            return array();
+        }
     }
+}
+if ( ! isset( $GLOBALS['ot_test_queries'] ) ) {
+    $GLOBALS['ot_test_queries'] = array();
 }
 if ( ! isset( $GLOBALS['wpdb'] ) ) {
     $GLOBALS['wpdb'] = new OT_Test_WPDB();
@@ -185,4 +214,81 @@ if ( ! function_exists( 'wp_remote_post' ) ) {
     function wp_remote_retrieve_response_message( $r ) {
         return is_array( $r ) && isset( $r['response']['message'] ) ? $r['response']['message'] : '';
     }
+    function wp_remote_retrieve_header( $r, $header ) {
+        if ( ! is_array( $r ) || ! isset( $r['headers'] ) || ! is_array( $r['headers'] ) ) {
+            return '';
+        }
+        $header = strtolower( $header );
+        foreach ( $r['headers'] as $name => $value ) {
+            if ( strtolower( $name ) === $header ) {
+                return $value;
+            }
+        }
+        return '';
+    }
 }
+
+// WP 条件标签 stub：用 ot_wp_page_set() 在用例间切换「当前渲染的页面」
+if ( ! function_exists( 'is_singular' ) ) {
+    $GLOBALS['ot_wp_page'] = array(
+        'wp_done'     => 1,         // did_action( 'wp' ) 的返回值，0 表示主查询未就绪
+        'singular'    => false,
+        'post_type'   => '',
+        'post_status' => 'publish',
+    );
+
+    function ot_wp_page_set( array $state = array() ) {
+        $GLOBALS['ot_wp_page'] = array_merge(
+            array( 'wp_done' => 1, 'singular' => false, 'post_type' => '', 'post_status' => 'publish' ),
+            $state
+        );
+    }
+    function did_action( $hook ) {
+        return ( 'wp' === $hook ) ? (int) $GLOBALS['ot_wp_page']['wp_done'] : 1;
+    }
+    function is_singular( $post_types = '' ) {
+        return (bool) $GLOBALS['ot_wp_page']['singular'];
+    }
+    function get_post_type( $post = null ) {
+        return $GLOBALS['ot_wp_page']['post_type'];
+    }
+    function get_post_status( $post = null ) {
+        return $GLOBALS['ot_wp_page']['post_status'];
+    }
+}
+// 请求上下文 stub：用 ot_wp_context_set() 切换「当前请求的身份」
+if ( ! function_exists( 'is_admin' ) ) {
+    $GLOBALS['ot_wp_context'] = array(
+        'admin'      => false,
+        'ajax'       => false,
+        'cron'       => false,
+        'logged_in'  => false,
+        'can_manage' => false,
+    );
+
+    function ot_wp_context_set( array $state = array() ) {
+        $GLOBALS['ot_wp_context'] = array_merge(
+            array( 'admin' => false, 'ajax' => false, 'cron' => false, 'logged_in' => false, 'can_manage' => false ),
+            $state
+        );
+    }
+    function is_admin() {
+        return (bool) $GLOBALS['ot_wp_context']['admin'];
+    }
+    function wp_doing_ajax() {
+        return (bool) $GLOBALS['ot_wp_context']['ajax'];
+    }
+    function wp_doing_cron() {
+        return (bool) $GLOBALS['ot_wp_context']['cron'];
+    }
+    function is_user_logged_in() {
+        return (bool) $GLOBALS['ot_wp_context']['logged_in'];
+    }
+    function current_user_can( $cap ) {
+        return (bool) $GLOBALS['ot_wp_context']['can_manage'];
+    }
+}
+
+
+// 被测类里需要在 stub 之后加载的：Request_Budget 读 option / 用 $wpdb
+require_once __DIR__ . '/../includes/class-request-budget.php';

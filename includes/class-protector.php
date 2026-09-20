@@ -23,7 +23,9 @@ class Protector {
             '/\{\{[^}]+\}\}/',
             '/\$\{[^}]+\}/',
             '/&[\w#]+;/',
-            '/https?:\/\/[^\s]+/i',
+            // 排除 `<`：否则会把前面模式已生成的 <protect-N> 卷进 URL，
+            // 形成嵌套 token，restore() 后必然残留并导致该条目永久失败。
+            '/https?:\/\/[^\s<]+/i',
             '/[\w.-]+@[\w.-]+\.\w+/',
             // TranslatePress 自身的占位符（TRP_Machine_Translator::translate() 生成）
             // 形如 1TP1T、1TP2T。必须放在 HTML 模式之后，

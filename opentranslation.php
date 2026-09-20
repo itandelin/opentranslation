@@ -20,7 +20,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 define( 'OPENTRANSLATION_VERSION', '1.0.0' );
 define( 'OPENTRANSLATION_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'OPENTRANSLATION_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'OPENTRANSLATION_DB_VERSION', '2' );
+// 3：移除自建队列，删除 cache 与 rate_limit 两张表
+define( 'OPENTRANSLATION_DB_VERSION', '3' );
 
 $ot_files = array(
     'class-activator',
@@ -33,7 +34,7 @@ $ot_files = array(
     'class-claude-client',
     'class-glossary',
     'class-protector',
-    'class-cache',
+    'class-request-budget',
     'class-log',
     'class-scope',
     'class-tp-storage-adapter',
@@ -41,7 +42,6 @@ $ot_files = array(
     'class-model-health',
     'class-usage',
     'class-translator',
-    'class-scheduler',
     'class-config-transfer',
     'class-admin-usage',
     'class-admin-glossary',
@@ -57,10 +57,13 @@ foreach ( $ot_files as $ot_file ) {
 }
 
 /**
- * Register OpenTranslation as a TranslatePress engine as early as possible.
+ * 把 OpenTranslation 注册为 TranslatePress 的机器翻译引擎。
  *
- * TranslatePress initializes the active machine translator on `plugins_loaded`
- * priority 2, so we need the engine mapping in place before that.
+ * TP 在 plugins_loaded 优先级 2 实例化引擎（class-translate-press.php:531），
+ * 所以注册必须早于该时机。
+ *
+ * 引擎类本身在 register_engine() 回调内懒加载：那一刻 TP 的基类必然已就位，
+ * 不再依赖插件目录的字母序，也不需要事后强制重建 TP 的引擎实例。
  */
 function opentranslation_register_tp_integration() {
     if ( ! class_exists( 'TRP_Translate_Press' ) ) {
@@ -71,47 +74,6 @@ function opentranslation_register_tp_integration() {
     new \OpenTranslation\TP_Integration();
 }
 add_action( 'plugins_loaded', 'opentranslation_register_tp_integration', 0 );
-
-/**
- * Load the TranslatePress engine class after TP has loaded its base classes,
- * but before we force a final engine refresh.
- */
-function opentranslation_load_tp_machine_translator() {
-    if ( class_exists( 'TRP_Machine_Translator' ) ) {
-        require_once OPENTRANSLATION_PLUGIN_DIR . 'includes/class-tp-machine-translator.php';
-    }
-}
-add_action( 'plugins_loaded', 'opentranslation_load_tp_machine_translator', 2 );
-
-/**
- * Refresh TranslatePress' cached machine translator instance so both the
- * credential test and runtime translations use the OpenTranslation engine.
- */
-function opentranslation_refresh_tp_machine_translator() {
-    if ( ! class_exists( 'TRP_Translate_Press' ) || ! class_exists( 'OpenTranslation\\TP_Machine_Translator' ) ) {
-        return;
-    }
-
-    $settings = get_option( 'trp_machine_translation_settings', array() );
-    if ( ( $settings['translation-engine'] ?? '' ) !== 'opentranslation_ai' ) {
-        return;
-    }
-
-    $trp = \TRP_Translate_Press::get_trp_instance();
-    if ( ! $trp || ! method_exists( $trp, 'init_machine_translation' ) ) {
-        return;
-    }
-
-    $machine_translator = $trp->get_component( 'machine_translator' );
-    if ( $machine_translator instanceof \OpenTranslation\TP_Machine_Translator ) {
-        return;
-    }
-
-    if ( method_exists( $trp, 'init_machine_translation' ) ) {
-        $trp->init_machine_translation();
-    }
-}
-add_action( 'plugins_loaded', 'opentranslation_refresh_tp_machine_translator', 3 );
 
 register_activation_hook( __FILE__, array( 'OpenTranslation\Activator', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'OpenTranslation\Deactivator', 'deactivate' ) );

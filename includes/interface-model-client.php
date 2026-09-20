@@ -7,12 +7,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 interface Model_Client {
     /**
-     * @param array  $items          Array of strings to translate.
-     * @param string $target_lang    Target language code.
-     * @param string $system_prompt  System prompt.
-     * @return array|\WP_Error
+     * @param array  $items          待翻译文本，按顺序排列
+     * @param string $target_lang    目标语言的引擎码
+     * @param string $system_prompt  系统提示词
+     * @param string $source_lang    源语言的引擎码，空串表示不声明
+     * @return array|\WP_Error 与 $items 等长且同序的译文数组
      */
-    public function translate( $items, $target_lang, $system_prompt = '' );
+    public function translate( $items, $target_lang, $system_prompt = '', $source_lang = '' );
 
     /**
      * Run a live connectivity test and return structured diagnostics.

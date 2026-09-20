@@ -66,8 +66,6 @@ class Admin {
         add_menu_page( __( 'OpenTranslation', 'opentranslation' ), __( 'OpenTranslation', 'opentranslation' ), 'manage_options', 'opentranslation', array( $this, 'render_settings_page' ), 'dashicons-translation', 80 );
         add_submenu_page( 'opentranslation', __( 'Settings', 'opentranslation' ), __( 'Settings', 'opentranslation' ), 'manage_options', 'opentranslation', array( $this, 'render_settings_page' ) );
         add_submenu_page( 'opentranslation', __( 'Models', 'opentranslation' ), __( 'Models', 'opentranslation' ), 'manage_options', 'opentranslation-models', array( $this, 'render_models_page' ) );
-        add_submenu_page( 'opentranslation', __( 'Queue & Logs', 'opentranslation' ), __( 'Queue & Logs', 'opentranslation' ), 'manage_options', 'opentranslation-queue', array( $this, 'render_queue_page' ) );
-        add_submenu_page( 'opentranslation', __( 'Failures', 'opentranslation' ), __( 'Failures', 'opentranslation' ), 'manage_options', 'opentranslation-failures', array( $this, 'render_failures_page' ) );
     }
 
     public function register_settings() {
@@ -111,22 +109,18 @@ class Admin {
     }
 
     /**
-     * 数值与提示词字段的规范化，抽出供配置导入复用（P2-5）。
+     * 提示词字段的规范化，抽出供配置导入复用（P2-5）。
      *
-     * 只做 absint / sanitize_textarea_field，不额外夹取上下限——与抽取前完全一致。
-     * 范围限制在使用处完成（Scheduler::run_rounds、Plugin::add_cron_interval）。
+     * 只做 sanitize_textarea_field，不额外处理——与抽取前完全一致。
      *
      * @param array $input 原始输入
-     * @return array 只含 batch_size / cron_interval / rate_limit_per_minute / system_prompt
+     * @return array 只含 system_prompt
      */
     public static function sanitize_numeric_settings( $input ) {
         $input = is_array( $input ) ? $input : array();
 
         return array(
-            'batch_size'            => isset( $input['batch_size'] ) ? absint( $input['batch_size'] ) : 10,
-            'cron_interval'         => isset( $input['cron_interval'] ) ? absint( $input['cron_interval'] ) : 5,
-            'rate_limit_per_minute' => isset( $input['rate_limit_per_minute'] ) ? absint( $input['rate_limit_per_minute'] ) : 20,
-            'system_prompt'         => isset( $input['system_prompt'] )
+            'system_prompt' => isset( $input['system_prompt'] )
                 ? sanitize_textarea_field( $input['system_prompt'] )
                 : self::default_system_prompt(),
         );
@@ -149,47 +143,6 @@ class Admin {
         $models = Encrypted_Options::get( 'opentranslation_models', array() );
         $health = new Model_Health();
         require OPENTRANSLATION_PLUGIN_DIR . 'templates/admin-models.php';
-    }
-
-    public function render_queue_page() {
-        $counts         = Cache::get_counts();
-        $counts_by_lang = Cache::get_counts_by_language();
-        $languages      = TP_Storage_Adapter::get_target_languages();
-        $settings       = get_option( 'opentranslation_settings', array() );
-        $disabled       = isset( $settings['disabled_languages'] ) ? $settings['disabled_languages'] : array();
-
-        $log_action   = isset( $_GET['log_action'] ) ? sanitize_text_field( wp_unslash( $_GET['log_action'] ) ) : '';
-        $log_page     = isset( $_GET['log_page'] ) ? max( 1, absint( $_GET['log_page'] ) ) : 1;
-        $log_per_page = 50;
-
-        // $log_actions 供 templates/admin-queue.php 渲染筛选下拉
-        $log_actions = Log::get_actions();
-
-        // 白名单净化：不在已知动作列表内一律置空，见 Log::sanitize_action
-        $log_action = Log::sanitize_action( $log_action );
-
-        $logs      = Log::get_recent( $log_per_page, ( $log_page - 1 ) * $log_per_page, $log_action );
-        $log_total = Log::count_all( $log_action );
-
-        require OPENTRANSLATION_PLUGIN_DIR . 'templates/admin-queue.php';
-    }
-
-    public function render_failures_page() {
-        // $languages 供 templates/admin-failures.php 渲染语言筛选
-        $languages = TP_Storage_Adapter::get_target_languages();
-
-        $language = isset( $_GET['lang'] ) ? sanitize_text_field( wp_unslash( $_GET['lang'] ) ) : '';
-
-        // 白名单净化：不在目标语言列表内一律置空，见 TP_Storage_Adapter::sanitize_language
-        $language = TP_Storage_Adapter::sanitize_language( $language );
-
-        $page     = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
-        $per_page = 20;
-
-        $items = Cache::get_failed_items( $language, $per_page, ( $page - 1 ) * $per_page );
-        $total = Cache::count_failed_items( $language );
-
-        require OPENTRANSLATION_PLUGIN_DIR . 'templates/admin-failures.php';
     }
 
     private function handle_models_actions() {

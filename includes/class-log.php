@@ -25,19 +25,19 @@ class Log {
 
     /**
      * 各 action 的级别。未列出的按 info 处理。
+     *
+     * 只列当前代码实际会写入的 action。队列时代的
+     * failed / retry / cache_* / scheduler_run 等已随模块删除，
+     * 历史日志行仍可正常查询，只是不再产生新记录。
      */
     private static function action_levels() {
         return array(
-            'failed'                => self::LEVEL_ERROR,
-            'tp_engine_error'       => self::LEVEL_ERROR,
-            'tp_bulk_update_failed' => self::LEVEL_ERROR,
-            'cache_insert_failed'   => self::LEVEL_ERROR,
-            'cache_update_failed'   => self::LEVEL_ERROR,
-            'cache_set_failed'      => self::LEVEL_ERROR,
-            'retry'                 => self::LEVEL_WARN,
-            'model_fallback'        => self::LEVEL_WARN,
-            'model_circuit_open'    => self::LEVEL_WARN,
-            'scheduler_run'         => self::LEVEL_DEBUG,
+            // 单条永久失败：译文被丢弃，需要人工关注
+            'item_failed'        => self::LEVEL_ERROR,
+            // 整块条数不符：通常是模型不遵守编号协议
+            'count_mismatch'     => self::LEVEL_WARN,
+            'model_fallback'     => self::LEVEL_WARN,
+            'model_circuit_open' => self::LEVEL_WARN,
         );
     }
 
@@ -81,6 +81,17 @@ class Log {
         return $message;
     }
 
+    /**
+     * 写入一条日志。
+     *
+     * 第一个参数原先是队列时代的 cache_key（md5），现在只是自由标识串：
+     * 可以传语言代码、TP 字典条目 id，或留空串。列名 cache_key 保持不变。
+     *
+     * @param string $cache_key 自由标识串，可为空
+     * @param string $action    动作名，决定日志级别，见 action_levels()
+     * @param string $message   消息正文，入库前走 redact() 脱敏
+     * @return bool
+     */
     public static function add( $cache_key, $action, $message = '' ) {
         if ( ! self::should_persist( self::level_for( $action ) ) ) {
             return true;
@@ -196,7 +207,7 @@ class Log {
     }
 
     /**
-     * 按天节流的清理入口，供 Scheduler 调用。
+     * 按天节流的清理入口。
      */
     public static function maybe_cleanup() {
         $last = (int) get_option( self::CLEANUP_OPTION, 0 );
