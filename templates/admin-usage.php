@@ -37,8 +37,8 @@ $first_currency = ! empty( $pricing ) ? reset( $pricing )['currency'] : 'USD';
                     <th style="width:9%;"><?php esc_html_e( 'Prompt', 'opentranslation' ); ?></th>
                     <th style="width:9%;"><?php esc_html_e( 'Completion', 'opentranslation' ); ?></th>
                     <th style="width:9%;"><?php esc_html_e( 'Total', 'opentranslation' ); ?></th>
-                    <th style="width:10%;"><?php esc_html_e( 'Prompt / 1K', 'opentranslation' ); ?></th>
-                    <th style="width:10%;"><?php esc_html_e( 'Completion / 1K', 'opentranslation' ); ?></th>
+                    <th style="width:10%;"><?php esc_html_e( 'Prompt / 1M', 'opentranslation' ); ?></th>
+                    <th style="width:10%;"><?php esc_html_e( 'Completion / 1M', 'opentranslation' ); ?></th>
                     <th style="width:7%;"><?php esc_html_e( 'Currency', 'opentranslation' ); ?></th>
                     <th><?php esc_html_e( 'Estimated cost', 'opentranslation' ); ?></th>
                 </tr>
@@ -58,8 +58,8 @@ $first_currency = ! empty( $pricing ) ? reset( $pricing )['currency'] : 'USD';
                             <td><?php echo esc_html( $fmt( $row['prompt_tokens'] ) ); ?></td>
                             <td><?php echo esc_html( $fmt( $row['completion_tokens'] ) ); ?></td>
                             <td><?php echo esc_html( $fmt( $row['total_tokens'] ) ); ?></td>
-                            <td><input type="number" step="0.0001" min="0" style="width:90px;" name="pricing[<?php echo esc_attr( $key ); ?>][prompt_per_1k]" value="<?php echo esc_attr( $pricing[ $key ]['prompt_per_1k'] ?? '' ); ?>" /></td>
-                            <td><input type="number" step="0.0001" min="0" style="width:90px;" name="pricing[<?php echo esc_attr( $key ); ?>][completion_per_1k]" value="<?php echo esc_attr( $pricing[ $key ]['completion_per_1k'] ?? '' ); ?>" /></td>
+                            <td><input type="number" step="any" min="0" style="width:90px;" name="pricing[<?php echo esc_attr( $key ); ?>][prompt_per_1m]" value="<?php echo esc_attr( isset( $pricing[ $key ]['prompt_per_1k'] ) ? (float) $pricing[ $key ]['prompt_per_1k'] * 1000 : '' ); ?>" /></td>
+                            <td><input type="number" step="any" min="0" style="width:90px;" name="pricing[<?php echo esc_attr( $key ); ?>][completion_per_1m]" value="<?php echo esc_attr( isset( $pricing[ $key ]['completion_per_1k'] ) ? (float) $pricing[ $key ]['completion_per_1k'] * 1000 : '' ); ?>" /></td>
                             <td><input type="text" maxlength="3" style="width:50px;" name="pricing[<?php echo esc_attr( $key ); ?>][currency]" value="<?php echo esc_attr( $currency_of( $key ) ); ?>" /></td>
                             <td><?php echo null === $cost ? '—' : esc_html( number_format_i18n( $cost, 4 ) . ' ' . $currency_of( $key ) ); ?></td>
                         </tr>

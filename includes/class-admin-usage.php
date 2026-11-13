@@ -94,6 +94,7 @@ class Admin_Usage {
 
     /**
      * 单价规范化：key 为 32 位 hex；两项单价 ≥ 0；币种 3 位大写字母。
+     * 每百万 Token 的表单单价换算为每千单价存储，兼容已有配置与旧表单。
      * 两项单价都为 0 的行视为未配置，不保存。
      */
     public static function sanitize_pricing( array $raw ) {
@@ -102,8 +103,10 @@ class Admin_Usage {
             if ( ! is_array( $row ) || 1 !== preg_match( '/^[a-f0-9]{32}$/', (string) $key ) ) {
                 continue;
             }
-            $p = max( 0.0, (float) ( $row['prompt_per_1k'] ?? 0 ) );
-            $c = max( 0.0, (float) ( $row['completion_per_1k'] ?? 0 ) );
+            $p = isset( $row['prompt_per_1m'] ) ? (float) $row['prompt_per_1m'] / 1000 : (float) ( $row['prompt_per_1k'] ?? 0 );
+            $c = isset( $row['completion_per_1m'] ) ? (float) $row['completion_per_1m'] / 1000 : (float) ( $row['completion_per_1k'] ?? 0 );
+            $p = max( 0.0, $p );
+            $c = max( 0.0, $c );
             if ( 0.0 === $p && 0.0 === $c ) {
                 continue;
             }

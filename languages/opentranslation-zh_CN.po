@@ -171,8 +171,8 @@ msgstr "熔断中"
 msgid "Completion"
 msgstr "生成"
 
-msgid "Completion / 1K"
-msgstr "生成 / 千 Token"
+msgid "Completion / 1M"
+msgstr "生成 / 百万 Token"
 
 msgid "Completion tokens"
 msgstr "生成 Token"
@@ -561,8 +561,8 @@ msgstr "优先级"
 msgid "Prompt"
 msgstr "提示"
 
-msgid "Prompt / 1K"
-msgstr "提示 / 千 Token"
+msgid "Prompt / 1M"
+msgstr "提示 / 百万 Token"
 
 msgid "Prompt tokens"
 msgstr "提示 Token"
