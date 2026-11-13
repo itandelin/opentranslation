@@ -49,7 +49,7 @@ if ( ! function_exists( 'absint' ) ) {
     }
 }
 
-// 内存版 option：测试里直接读写 $GLOBALS['ot_test_options']
+// 内存版 option：保留 WordPress 写入前的设置校验，数据存入 ot_test_options。
 if ( ! function_exists( 'get_option' ) ) {
     $GLOBALS['ot_test_options'] = array();
 
@@ -59,6 +59,7 @@ if ( ! function_exists( 'get_option' ) ) {
             : $default;
     }
     function update_option( $name, $value, $autoload = null ) {
+        $value = apply_filters( 'sanitize_option_' . $name, $value );
         $GLOBALS['ot_test_options'][ $name ] = $value;
         return true;
     }
@@ -182,6 +183,15 @@ if ( ! function_exists( 'add_filter' ) ) {
 // 覆盖上方的直通版 apply_filters：有注册则调用，无则返回默认值
 if ( ! isset( $GLOBALS['ot_test_filters'] ) ) {
     $GLOBALS['ot_test_filters'] = array();
+}
+
+if ( ! function_exists( 'register_setting' ) ) {
+    function register_setting( $group, $name, $args = array() ) {
+        $callback = is_callable( $args ) ? $args : ( $args['sanitize_callback'] ?? null );
+        if ( $callback ) {
+            add_filter( 'sanitize_option_' . $name, $callback );
+        }
+    }
 }
 
 // HTTP stub：wp_remote_post 按队列依次返回预设响应，并记录请求体
